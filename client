@@ -1751,11 +1751,12 @@ echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Deploy nftable
 
 updateAPT(){
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Debian Updated${cRES}\r\c"
+debianVer=$(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1)
 cat << EOF >/etc/apt/sources.list
-deb http://cloudfront.debian.net/debian bookworm main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian-security bookworm-security main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian bookworm-backports main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian $debianVer main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian-security $debianVer-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian $debianVer-updates main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian $debianVer-backports main contrib non-free non-free-firmware
 EOF
 
 echo "deb [signed-by=/etc/apt/keyrings/deb.sury.org.gpg] https://packages.sury.org/php/ $(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1) main" >/etc/apt/sources.list.d/php.list
@@ -2537,15 +2538,17 @@ apt update --fix-missing && apt upgrade --allow-downgrades -y
 apt full-upgrade -y && apt autoremove --purge -y && apt clean -y && apt autoclean -y
 fi
 
+debianVer=$(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1)
 cat << EOF >/etc/apt/sources.list
-deb http://$chnAPTsource/debian bookworm main contrib non-free non-free-firmware
-deb http://$chnAPTsource/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://$chnAPTsource/debian bookworm-backports main contrib non-free non-free-firmware
-deb http://$chnAPTsource/debian-security bookworm-security main contrib non-free non-free-firmware
+deb http://$chnAPTsource/debian $debianVer main contrib non-free non-free-firmware
+deb http://$chnAPTsource/debian $debianVer-updates main contrib non-free non-free-firmware
+deb http://$chnAPTsource/debian $debianVer-backports main contrib non-free non-free-firmware
+deb http://$chnAPTsource/debian-security $debianVer-security main contrib non-free non-free-firmware
 EOF
 
 sed -i "s/ buster / bookworm /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
 sed -i "s/ bullseye / bookworm /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
+[[ $debianVer == "trixie" ]] && sed -i "s/ bookworm / trixie /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
 apt update --fix-missing && apt upgrade --allow-downgrades -y
 apt full-upgrade -y && apt autoremove --purge -y && apt clean -y && apt autoclean -y
 

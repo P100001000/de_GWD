@@ -337,11 +337,11 @@ rm -f /var/lib/dpkg/lock
 rm -f /var/lib/dpkg/lock-frontend
 dpkg --configure -a
 
-cat << EOF >/etc/apt/sources.list
-deb http://cloudfront.debian.net/debian bookworm main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian-security bookworm-security main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://cloudfront.debian.net/debian bookworm-backports main contrib non-free non-free-firmware
+	debianVer=$(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1)
+deb http://deb.debian.org/debian $debianVer main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian-security $debianVer-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian $debianVer-updates main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian $debianVer-backports main contrib non-free non-free-firmware
 EOF
 
 apt update --fix-missing && apt upgrade --allow-downgrades -y
@@ -1941,22 +1941,24 @@ apt update --fix-missing && apt upgrade --allow-downgrades -y
 apt full-upgrade -y && apt autoremove --purge -y && apt clean -y && apt autoclean -y
 fi
 
+debianVer=$(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1)
 cat << EOF >/etc/apt/sources.list
-deb http://deb.debian.org/debian bookworm main non-free-firmware
-deb-src http://deb.debian.org/debian bookworm main non-free-firmware
+deb http://deb.debian.org/debian $debianVer main non-free-firmware
+deb-src http://deb.debian.org/debian $debianVer main non-free-firmware
 
-deb http://deb.debian.org/debian-security/ bookworm-security main non-free-firmware
-deb-src http://deb.debian.org/debian-security/ bookworm-security main non-free-firmware
+deb http://deb.debian.org/debian-security/ $debianVer-security main non-free-firmware
+deb-src http://deb.debian.org/debian-security/ $debianVer-security main non-free-firmware
 
-deb http://deb.debian.org/debian bookworm-updates main non-free-firmware
-deb-src http://deb.debian.org/debian bookworm-updates main non-free-firmware
+deb http://deb.debian.org/debian $debianVer-updates main non-free-firmware
+deb-src http://deb.debian.org/debian $debianVer-updates main non-free-firmware
 
-deb http://deb.debian.org/debian bookworm-backports main non-free-firmware
-deb-src http://deb.debian.org/debian bookworm-backports main non-free-firmware
+deb http://deb.debian.org/debian $debianVer-backports main non-free-firmware
+deb-src http://deb.debian.org/debian $debianVer-backports main non-free-firmware
 EOF
 
 sed -i "s/ buster / bookworm /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
 sed -i "s/ bullseye / bookworm /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
+[[ $debianVer == "trixie" ]] && sed -i "s/ bookworm / trixie /g" /etc/apt/sources.list.d/* >/dev/null 2>&1
 apt update --fix-missing && apt upgrade --allow-downgrades -y
 apt full-upgrade -y && apt autoremove --purge -y && apt clean -y && apt autoclean -y
 
