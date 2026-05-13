@@ -1,0 +1,144 @@
+name: Build nginx
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            openssl_target: linux-x86_64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            openssl_target: linux-aarch64
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            gcc g++ make \
+            zlib1g-dev \
+            libxml2-dev \
+            libxslt1-dev \
+            libgd-dev \
+            libgeoip-dev \
+            libgoogle-perftools-dev \
+            libperl-dev \
+            perl \
+            git \
+            cmake \
+            wget \
+            libatomic-ops-dev
+
+      - name: Download PCRE source
+        run: |
+          wget -qO /tmp/pcre.tar.bz2 https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2
+          tar xjf /tmp/pcre.tar.bz2 -C /tmp
+
+      - name: Build mimalloc
+        run: |
+          wget -qO /tmp/mimalloc.tar.gz https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz
+          mkdir -p /tmp/mimalloc-src
+          tar xzf /tmp/mimalloc.tar.gz -C /tmp/mimalloc-src --strip-components=1
+          cd /tmp/mimalloc-src
+          cmake -B out -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_TESTS=OFF
+          make -C out -j$(nproc)
+          sudo make -C out install
+          sudo ldconfig
+
+      - name: Build quictls (OpenSSL + QUIC)
+        run: |
+          git clone --depth 1 --branch openssl-3.3.0-quic1 https://github.com/quictls/openssl.git /tmp/quictls
+          cd /tmp/quictls
+          ./Configure ${{ matrix.openssl_target }} \
+            --prefix=/usr/local/quictls \
+            --openssldir=/usr/local/quictls/ssl \
+            enable-ktls \
+            enable-ec_nistp_64_gcc_128 \
+            shared
+          make -j$(nproc)
+          sudo make install
+
+      - name: Clone nginx modules
+        run: |
+          git clone --depth 1 --recurse-submodules https://github.com/google/ngx_brotli.git /tmp/ngx_brotli
+          git clone --depth 1 https://github.com/vision5/ngx_devel_kit.git /tmp/ngx_devel_kit
+
+      - name: Build nginx ${{ matrix.arch }}
+        run: |
+          wget -qO /tmp/nginx.tar.gz https://nginx.org/download/nginx-1.30.1.tar.gz
+          tar xzf /tmp/nginx.tar.gz -C /tmp
+          cd /tmp/nginx-1.30.1
+
+          ./configure \
+            --prefix=/etc/nginx \
+            --sbin-path=/usr/sbin/nginx \
+            --modules-path=/usr/lib/nginx/modules \
+            --conf-path=/etc/nginx/nginx.conf \
+            --error-log-path=/var/log/nginx/error.log \
+            --http-log-path=/var/log/nginx/access.log \
+            --pid-path=/run/nginx.pid \
+            --lock-path=/run/nginx.lock \
+            --http-client-body-temp-path=/var/cache/nginx/client_temp \
+            --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+            --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+            --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+            --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+            --user=www-data \
+            --group=www-data \
+            --with-compat \
+            --with-file-aio \
+            --with-threads \
+            --with-libatomic \
+            --with-http_ssl_module \
+            --with-http_v2_module \
+            --with-http_v3_module \
+            --with-http_realip_module \
+            --with-http_addition_module \
+            --with-http_sub_module \
+            --with-http_dav_module \
+            --with-http_flv_module \
+            --with-http_mp4_module \
+            --with-http_gunzip_module \
+            --with-http_gzip_static_module \
+            --with-http_auth_request_module \
+            --with-http_random_index_module \
+            --with-http_secure_link_module \
+            --with-http_degradation_module \
+            --with-http_slice_module \
+            --with-http_stub_status_module \
+            --with-http_xslt_module=dynamic \
+            --with-http_perl_module=dynamic \
+            --with-stream \
+            --with-stream_ssl_module \
+            --with-stream_ssl_preread_module \
+            --with-stream_realip_module \
+            --with-pcre=/tmp/pcre-8.45 \
+            --with-pcre-jit \
+            --add-module=/tmp/ngx_brotli \
+            --add-module=/tmp/ngx_devel_kit \
+            --with-openssl=/tmp/quictls \
+            --with-openssl-opt='enable-ktls enable-ec_nistp_64_gcc_128' \
+            --with-cc-opt='-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC' \
+            --with-ld-opt="-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -Wl,-z,relro -Wl,-z,now -Wl,-E -Wl,--as-needed -fPIC -L /usr/local/lib -lmimalloc"
+
+          make -j$(nproc)
+          strip -s objs/nginx
+          mv objs/nginx /tmp/nginx-${{ matrix.arch }}
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: nginx-${{ matrix.arch }}
+          path: /tmp/nginx-${{ matrix.arch }}
+          compression-level: 0
