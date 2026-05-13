@@ -4,6 +4,8 @@
 
 * 基于性能考量，尽量避免使用虚拟交换
 
+> **注意**：此仓库是 [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) 的社区维护分支。
+> 原项目已于 2025年10月归档，本分支将继续跟进组件更新、分流规则更新及 Debian 新版本适配。
 
 [![Telegram](https://cdn.jsdelivr.net/gh/Patrolavia/telegram-badge@8fe3382b3fd3a1c533ba270e608035a27e430c2e/chat.svg)](https://t.me/de_GWD_DQ)  
 
@@ -11,15 +13,15 @@
 ## Server (amd64 & arm64) support kvm xen openvz lxc and so on:
 ```
 apt install -y wget
-bash <(wget --no-check-certificate -qO- https://raw.githubusercontent.com/jacyl4/de_GWD/main/server)
+bash <(wget --no-check-certificate -qO- https://raw.githubusercontent.com/P100001000/de_GWD/main/server)
 ```
 
-![de_GWD 0](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/0.png)
+![de_GWD 0](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/0.png)
 
 ## Client (amd64 & arm64):
 ```
 apt install -y wget
-bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubusercontent.com/jacyl4/de_GWD/main/client)
+bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubusercontent.com/P100001000/de_GWD/main/client)
 ```
 或
 
@@ -29,14 +31,12 @@ chmod +x client
 ./client
 ```
 
-![de_GWD 1](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/1.png)
-![de_GWD 2](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/2.png)
-![de_GWD 3](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/3.png)
-![de_GWD 4](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/4.png)
-![de_GWD 5](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/5.png)
+![de_GWD 1](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/1.png)
+![de_GWD 2](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/2.png)
+![de_GWD 3](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/3.png)
+![de_GWD 4](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/4.png)
+![de_GWD 5](https://raw.githubusercontent.com/P100001000/de_GWD/main/resource/screenshot/5.png)
 
-## Manual:
-[Deepwiki 自动生成的文档](https://deepwiki.com/jacyl4/de_GWD)    
 
 ## Thanks to
 * [ XTLS/Xray-core ](https://github.com/XTLS/Xray-core)
@@ -56,7 +56,5 @@ chmod +x client
 * [ nyanmisaka/jellyfin ](https://hub.docker.com/r/nyanmisaka/jellyfin)
 * [ dani-garcia/vaultwarden ](https://github.com/dani-garcia/vaultwarden)
 
-## Stargazers over time
-[![Stargazers over time](https://starchart.cc/jacyl4/de_GWD.svg)](https://starchart.cc/jacyl4/de_GWD)
-
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+## Upstream
+原项目 [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) 由 JacyL4 创建，已于 2025年10月归档。
