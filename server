@@ -2158,7 +2158,7 @@ else
   echo -e "${WHITE} AutoUpdate     \c" && echo -e "${WHITE}[ ${WHITE}- ${WHITE}]${cRES}"
 fi
 
-echo -e "${BLUE}$virt${cRES}"
+echo -e "${BLUE}$virt_type${cRES}"
 [[ -f "/opt/de_GWD/version.php" ]] && echo -e "${BLUE}Version: ${YELLOW}$(echo $(awk 'NR==1' /opt/de_GWD/version.php)) ${cRES}"
 [[ $(systemctl is-active 'wg-quick@wgcf') = "active" ]] && echo -e "${PURPLE}[Enabled] Cloudflare wireguard upstream (WARP) ${cRES}"
 [[ $(systemctl is-active 'haproxy') = "active" ]] && echo -e "${PURPLE}[Enabled] HAProxy TCP Port Forward${cRES}"
