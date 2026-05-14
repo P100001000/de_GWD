@@ -8,122 +8,222 @@ CYAN='\E[1;36m'
 WHITE='\E[1;37m'
 cRES='\E[0m'
 
+set -euo pipefail
 
+# ── Staging & status ──────────────────────────────────────────────
+STAGING="/tmp/de_GWD_update"
+STATUS_FILE="/opt/de_GWD/.update_status"
+FAIL_COUNT_FILE="/opt/de_GWD/.update_fail_count"
+failed_items=""
+
+rm -rf "$STAGING"
+mkdir -p "$STAGING"
+
+# ── Data source registry:  name|primary_url|mirror_url|sha256_url|repo_path|min_size|min_lines ──
+declare -A SRC_PRIMARY SRC_MIRROR SRC_SHA SRC_REPO SRC_MINSIZE SRC_MINLINES
+
+SRC_PRIMARY[geosite]="https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat"
+SRC_MIRROR[geosite]="https://ghproxy.net/https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat"
+SRC_SHA[geosite]="https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat.sha256sum"
+SRC_REPO[geosite]="/opt/de_GWD/.repo/geosite.dat"
+SRC_MINSIZE[geosite]=3500
+SRC_MINLINES[geosite]=0
+
+SRC_PRIMARY[geoip]="https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip.dat"
+SRC_MIRROR[geoip]="https://ghproxy.net/https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip.dat"
+SRC_SHA[geoip]="https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip.dat.sha256sum"
+SRC_REPO[geoip]="/opt/de_GWD/.repo/geoip.dat"
+SRC_MINSIZE[geoip]=8000
+SRC_MINLINES[geoip]=0
+
+SRC_PRIMARY[IPchnroute]="https://raw.githubusercontent.com/P100001000/chnroute/main/IPchnroute"
+SRC_MIRROR[IPchnroute]="https://ghproxy.net/https://raw.githubusercontent.com/P100001000/chnroute/main/IPchnroute"
+SRC_SHA[IPchnroute]="https://raw.githubusercontent.com/P100001000/chnroute/main/IPchnroute.sha256sum"
+SRC_REPO[IPchnroute]="/opt/de_GWD/.repo/IPchnroute"
+SRC_MINSIZE[IPchnroute]=100
+SRC_MINLINES[IPchnroute]=5000
+
+SRC_PRIMARY[DomainsChn]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.chn.txt"
+SRC_MIRROR[DomainsChn]="https://ghproxy.net/https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.chn.txt"
+SRC_SHA[DomainsChn]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.chn.txt.sha256sum"
+SRC_REPO[DomainsChn]="/opt/de_GWD/.repo/Domains.chn.txt"
+SRC_MINSIZE[DomainsChn]=50
+SRC_MINLINES[DomainsChn]=1000
+
+SRC_PRIMARY[DomainsApple]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.apple.txt"
+SRC_MIRROR[DomainsApple]="https://ghproxy.net/https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.apple.txt"
+SRC_SHA[DomainsApple]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.apple.txt.sha256sum"
+SRC_REPO[DomainsApple]="/opt/de_GWD/.repo/Domains.apple.txt"
+SRC_MINSIZE[DomainsApple]=1
+SRC_MINLINES[DomainsApple]=1
+
+SRC_PRIMARY[DomainsGames]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.games.txt"
+SRC_MIRROR[DomainsGames]="https://ghproxy.net/https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.games.txt"
+SRC_SHA[DomainsGames]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.games.txt.sha256sum"
+SRC_REPO[DomainsGames]="/opt/de_GWD/.repo/Domains.games.txt"
+SRC_MINSIZE[DomainsGames]=1
+SRC_MINLINES[DomainsGames]=1
+
+SRC_PRIMARY[bogusNxdomain]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/99-bogus-nxdomain.china.conf"
+SRC_MIRROR[bogusNxdomain]="https://ghproxy.net/https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/99-bogus-nxdomain.china.conf"
+SRC_SHA[bogusNxdomain]="https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/99-bogus-nxdomain.china.conf.sha256sum"
+SRC_REPO[bogusNxdomain]="/opt/de_GWD/.repo/99-bogus-nxdomain.china.conf"
+SRC_MINSIZE[bogusNxdomain]=1
+SRC_MINLINES[bogusNxdomain]=1
+
+SOURCE_NAMES=(geosite geoip IPchnroute DomainsChn DomainsApple DomainsGames bogusNxdomain)
+
+# ── Helper functions ──────────────────────────────────────────────
+
+checkSum(){
+	local sha256sumL
+	sha256sumL=$(sha256sum "$1" 2>/dev/null | awk '{print $1}')
+	if [[ $sha256sumL = "$2" ]]; then
+	  echo "true"
+	else
+	  echo "false"
+	fi
+}
+
+hash_name(){ echo "$1" | sha256sum | awk '{print $1}'; }
+
+# download_with_fallback: tries primary URL, falls back to mirror
+# $1 = primary URL, $2 = mirror URL, $3 = destination path
+download_with_fallback(){
+	local url="$1" mirror="$2" dest="$3"
+	if curl -fsSLo "$dest" -m 30 "$url"; then
+		return 0
+	fi
+	echo -e "  ${YELLOW}Primary failed, trying mirror...${cRES}" >&2
+	if curl -fsSLo "$dest" -m 30 "$mirror"; then
+		return 0
+	fi
+	return 1
+}
+
+# health_check: validates downloaded file format
+# $1 = file path, $2 = source name, $3 = expected minsize (KB), $4 = expected minlines
+health_check(){
+	local file="$1" name="$2" minsize="$3" minlines="$4"
+	local actual_size
+
+	# File exists and is non-empty
+	[[ -f "$file" ]] || { echo -e "  ${RED}Missing file${cRES}" >&2; return 1; }
+
+	actual_size=$(du -k "$file" | awk '{print $1}')
+	[[ $actual_size -ge $minsize ]] || { echo -e "  ${RED}Size too small: ${actual_size}KB < ${minsize}KB${cRES}" >&2; return 1; }
+
+	# For dat files: check header is not all zeros
+	if [[ "$name" == "geosite" || "$name" == "geoip" ]]; then
+		[[ $(head -c 4 "$file" | od -An -tx1 | tr -d ' \n') != "00000000" ]] || { echo -e "  ${RED}Corrupt header (all zeros)${cRES}" >&2; return 1; }
+	fi
+
+	# For IP/list files: check CIDR/line format
+	if [[ "$name" == "IPchnroute" ]]; then
+		local cidr_count
+		cidr_count=$(grep -cE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$' "$file" || true)
+		[[ $cidr_count -ge $minlines ]] || { echo -e "  ${RED}CIDR lines (${cidr_count}) < min (${minlines})${cRES}" >&2; return 1; }
+	fi
+
+	# For domain lists: check line count
+	if [[ "$name" == "DomainsChn" ]]; then
+		local line_count
+		line_count=$(wc -l < "$file" || true)
+		[[ $line_count -ge $minlines ]] || { echo -e "  ${RED}Line count (${line_count}) < min (${minlines})${cRES}" >&2; return 1; }
+	fi
+
+	return 0
+}
+
+# ── Main update logic ─────────────────────────────────────────────
 
 /opt/de_GWD/tcpTime
 
-serverConnect1=$(curl -Is -m 5 google.com | grep 'HTTP')
-serverConnect2=$(curl -Is -m 5 youtube.com | grep 'HTTP')
-[[ -z $serverConnect1 ]] && [[ -z $serverConnect2 ]] && exit
+serverConnect1=$(curl -Is -m 5 google.com | grep 'HTTP' || true)
+serverConnect2=$(curl -Is -m 5 youtube.com | grep 'HTTP' || true)
+[[ -z $serverConnect1 ]] && [[ -z $serverConnect2 ]] && { echo "No internet connection, skipping update."; echo "$(date +%s)|SKIP|no_internet" > "$STATUS_FILE"; exit 0; }
 
 [[ $1 = "u" ]] && service cron stop
 
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules${cRES}\r\c"
-checkSum(){
-sha256sumL=$(sha256sum $1 2>/dev/null | awk '{print$1}')
-if [[ $sha256sumL = $2 ]]; then 
-  echo "true"
-elif [[ $sha256sumL != $2 ]]; then
-  echo "false"
-fi
-}
 
-geosite_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat.sha256sum | awk '{print$1}')
-geoip_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip.dat.sha256sum | awk '{print$1}')
-IPchnroute_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/P100001000/chnroute/main/IPchnroute.sha256sum)
-DomainsChn_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.chn.txt.sha256sum)
-DomainsApple_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.apple.txt.sha256sum)
-DomainsGames_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.games.txt.sha256sum)
-bogusNxdomain_sha256sum=$(curl -fsSLo- https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/99-bogus-nxdomain.china.conf.sha256sum)
+# ── Phase 1: Fetch all SHA sums and download to staging ──────────
 
-if [[ $(checkSum /opt/de_GWD/.repo/geosite.dat $geosite_sha256sum) = "false" ]]; then
-rm -rf /tmp/geosite.dat
-wget --show-progress -cqO /tmp/geosite.dat https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat
-  if [[ $(checkSum /tmp/geosite.dat $geosite_sha256sum) = "true" ]]; then
-    mv -f /tmp/geosite.dat /opt/de_GWD/.repo/geosite.dat
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}geosite.dat${RED} Download Failed${cRES}"
-  fi
-fi
+declare -A sha_sums
+all_ok="true"
 
-if [[ $(checkSum /opt/de_GWD/.repo/geoip.dat $geoip_sha256sum) = "false" ]]; then
-rm -rf /tmp/geoip.dat
-wget --show-progress -cqO /tmp/geoip.dat https://raw.githubusercontent.com/Loyalsoldier/geoip/release/geoip.dat
-  if [[ $(checkSum /tmp/geoip.dat $geoip_sha256sum) = "true" ]]; then
-    mv -f /tmp/geoip.dat /opt/de_GWD/.repo/geoip.dat
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}geoip.dat${RED} Download Failed${cRES}"
-  fi
-fi
+for name in "${SOURCE_NAMES[@]}"; do
+	# Fetch SHA
+	sha_sums[$name]=$(curl -fsSLo- -m 30 "${SRC_SHA[$name]}" | awk '{print $1}' || true)
 
-if [[ $(checkSum /opt/de_GWD/.repo/IPchnroute $IPchnroute_sha256sum) = "false" ]]; then
-rm -rf /tmp/IPchnroute
-wget --show-progress -cqO /tmp/IPchnroute https://raw.githubusercontent.com/P100001000/chnroute/main/IPchnroute
-  if [[ $(checkSum /tmp/IPchnroute $IPchnroute_sha256sum) = "true" ]]; then
-    mv -f /tmp/IPchnroute /opt/de_GWD/.repo/IPchnroute
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}IPchnroute${RED} Download Failed${cRES}"
-  fi
-fi
+	if [[ -z ${sha_sums[$name]} ]]; then
+		echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}${name}${RED} SHA fetch failed${cRES}"
+		failed_items="${failed_items}${name}(sha),"
+		all_ok="partial"
+		continue
+	fi
 
-if [[ $(checkSum /opt/de_GWD/.repo/Domains.chn.txt $DomainsChn_sha256sum) = "false" ]]; then
-rm -rf /tmp/Domains.chn.txt
-wget --show-progress -cqO /tmp/Domains.chn.txt https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.chn.txt
-  if [[ $(checkSum /tmp/Domains.chn.txt $DomainsChn_sha256sum) = "true" ]]; then
-    mv -f /tmp/Domains.chn.txt /opt/de_GWD/.repo/Domains.chn.txt
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Domains.chn.txt${RED} Download Failed${cRES}"
-  fi
-fi
+	# Check if local file already matches
+	if [[ $(checkSum "${SRC_REPO[$name]}" "${sha_sums[$name]}") = "true" ]]; then
+		# Copy existing file to staging (no download needed)
+		cp -f "${SRC_REPO[$name]}" "$STAGING/$(basename "${SRC_REPO[$name]}")"
+		continue
+	fi
 
-if [[ $(checkSum /opt/de_GWD/.repo/Domains.apple.txt $DomainsApple_sha256sum) = "false" ]]; then
-rm -rf /tmp/Domains.apple.txt
-wget --show-progress -cqO /tmp/Domains.apple.txt https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.apple.txt
-  if [[ $(checkSum /tmp/Domains.apple.txt $DomainsApple_sha256sum) = "true" ]]; then
-    mv -f /tmp/Domains.apple.txt /opt/de_GWD/.repo/Domains.apple.txt
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Domains.apple.txt${RED} Download Failed${cRES}"
-  fi
-fi
+	# Download to staging
+	staging_path="$STAGING/$(basename "${SRC_REPO[$name]}")"
+	if download_with_fallback "${SRC_PRIMARY[$name]}" "${SRC_MIRROR[$name]}" "$staging_path"; then
+		# Verify SHA
+		if [[ $(checkSum "$staging_path" "${sha_sums[$name]}") != "true" ]]; then
+			echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}${name}${RED} SHA mismatch${cRES}"
+			failed_items="${failed_items}${name}(sha-mismatch),"
+			all_ok="partial"
+			rm -f "$staging_path"
+			continue
+		fi
+		# Health check
+		if ! health_check "$staging_path" "$name" "${SRC_MINSIZE[$name]}" "${SRC_MINLINES[$name]}"; then
+			echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}${name}${RED} health check failed${cRES}"
+			failed_items="${failed_items}${name}(health),"
+			all_ok="partial"
+			rm -f "$staging_path"
+			continue
+		fi
+	else
+		echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}${name}${RED} Download Failed${cRES}"
+		failed_items="${failed_items}${name}(download),"
+		all_ok="partial"
+	fi
+done
 
-if [[ $(checkSum /opt/de_GWD/.repo/Domains.games.txt $DomainsGames_sha256sum) = "false" ]]; then
-rm -rf /tmp/Domains.games.txt
-wget --show-progress -cqO /tmp/Domains.games.txt https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/Domains.games.txt
-  if [[ $(checkSum /tmp/Domains.games.txt $DomainsGames_sha256sum) = "true" ]]; then
-    mv -f /tmp/Domains.games.txt /opt/de_GWD/.repo/Domains.games.txt
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Domains.games.txt${RED} Download Failed${cRES}"
-  fi
-fi
+# ── Phase 2: Atomic install ───────────────────────────────────────
 
-if [[ $(checkSum /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf $bogusNxdomain_sha256sum) = "false" ]]; then
-rm -rf /tmp/99-bogus-nxdomain.china.conf
-wget --show-progress -cqO /tmp/99-bogus-nxdomain.china.conf https://raw.githubusercontent.com/P100001000/chnroute/main/mosdns_chnlist/99-bogus-nxdomain.china.conf
-  if [[ $(checkSum /tmp/99-bogus-nxdomain.china.conf $bogusNxdomain_sha256sum) = "true" ]]; then
-    mv -f /tmp/99-bogus-nxdomain.china.conf /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf
-  else
-    echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}bogus-nxdomain.china.conf${RED} Download Failed${cRES}"
-  fi
-fi
+if [[ $all_ok = "true" ]]; then
+	# All downloads + checks passed: move staging to repo
+	for name in "${SOURCE_NAMES[@]}"; do
+		local_fname=$(basename "${SRC_REPO[$name]}")
+		[[ -f "$STAGING/$local_fname" ]] && mv -f "$STAGING/$local_fname" "${SRC_REPO[$name]}"
+	done
 
-if [[ $(checkSum /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf $bogusNxdomain_sha256sum) = "true" ]]; then
-  cp -f /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf /etc/dnsmasq.d/
-fi
+	# Apply rules
+	if [[ $(checkSum "/opt/de_GWD/.repo/99-bogus-nxdomain.china.conf" "${sha_sums[bogusNxdomain]}") = "true" ]]; then
+		cp -f /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf /etc/dnsmasq.d/
+	fi
 
-if [[ $(checkSum /opt/de_GWD/.repo/geosite.dat $geosite_sha256sum) = "true" ]]; then
-  cp -f /opt/de_GWD/.repo/geosite.dat /opt/de_GWD/vtrui/geosite.dat
-fi
+	if [[ $(checkSum "/opt/de_GWD/.repo/geosite.dat" "${sha_sums[geosite]}") = "true" ]]; then
+		cp -f /opt/de_GWD/.repo/geosite.dat /opt/de_GWD/vtrui/geosite.dat
+	fi
 
-if [[ $(checkSum /opt/de_GWD/.repo/geoip.dat $geoip_sha256sum) = "true" ]]; then
-  cp -f /opt/de_GWD/.repo/geoip.dat /opt/de_GWD/vtrui/geoip.dat
-fi
+	if [[ $(checkSum "/opt/de_GWD/.repo/geoip.dat" "${sha_sums[geoip]}") = "true" ]]; then
+		cp -f /opt/de_GWD/.repo/geoip.dat /opt/de_GWD/vtrui/geoip.dat
+	fi
 
-if [[ $(checkSum /opt/de_GWD/.repo/IPchnroute $IPchnroute_sha256sum) = "true" ]]; then
-cp -f /opt/de_GWD/.repo/IPchnroute /opt/de_GWD/nftables/IP_CHNROUTE
-sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE
-sed -i 's/$/,/g' /opt/de_GWD/nftables/IP_CHNROUTE
-nft flush set ip de_GWD CHNROUTE
-cat << EOF >/opt/de_GWD/nftables/SET_CHNROUTE.nft
+	if [[ $(checkSum "/opt/de_GWD/.repo/IPchnroute" "${sha_sums[IPchnroute]}") = "true" ]]; then
+		cp -f /opt/de_GWD/.repo/IPchnroute /opt/de_GWD/nftables/IP_CHNROUTE
+		sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE
+		sed -i 's/$/,/g' /opt/de_GWD/nftables/IP_CHNROUTE
+		nft flush set ip de_GWD CHNROUTE
+		cat << EOF >/opt/de_GWD/nftables/SET_CHNROUTE.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
         set CHNROUTE {
@@ -134,19 +234,83 @@ table ip de_GWD {
         }
 }
 EOF
-chmod +x /opt/de_GWD/nftables/SET_CHNROUTE.nft
-/opt/de_GWD/nftables/SET_CHNROUTE.nft
+		chmod +x /opt/de_GWD/nftables/SET_CHNROUTE.nft
+		/opt/de_GWD/nftables/SET_CHNROUTE.nft
+	fi
+
+	echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules${cRES}"
+	echo "$(date +%s)|OK|" > "$STATUS_FILE"
+	rm -f "$FAIL_COUNT_FILE"
+
+elif [[ $all_ok = "partial" ]]; then
+	# Partial success: keep old data for failed items, apply what succeeded
+	for name in "${SOURCE_NAMES[@]}"; do
+		local_fname=$(basename "${SRC_REPO[$name]}")
+		[[ -f "$STAGING/$local_fname" ]] && mv -f "$STAGING/$local_fname" "${SRC_REPO[$name]}"
+	done
+
+	# Apply what we have
+	[[ -f "/opt/de_GWD/.repo/99-bogus-nxdomain.china.conf" ]] && cp -f /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf /etc/dnsmasq.d/ || true
+	[[ -f "/opt/de_GWD/.repo/geosite.dat" ]] && cp -f /opt/de_GWD/.repo/geosite.dat /opt/de_GWD/vtrui/geosite.dat || true
+	[[ -f "/opt/de_GWD/.repo/geoip.dat" ]] && cp -f /opt/de_GWD/.repo/geoip.dat /opt/de_GWD/vtrui/geoip.dat || true
+
+	if [[ -f "/opt/de_GWD/.repo/IPchnroute" ]]; then
+		cp -f /opt/de_GWD/.repo/IPchnroute /opt/de_GWD/nftables/IP_CHNROUTE
+		sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE
+		sed -i 's/$/,/g' /opt/de_GWD/nftables/IP_CHNROUTE
+		nft flush set ip de_GWD CHNROUTE
+		cat << EOF >/opt/de_GWD/nftables/SET_CHNROUTE.nft
+#!/usr/sbin/nft -f
+table ip de_GWD {
+        set CHNROUTE {
+                type ipv4_addr
+                flags interval
+                auto-merge
+                elements = { $(cat /opt/de_GWD/nftables/IP_CHNROUTE) }
+        }
+}
+EOF
+		chmod +x /opt/de_GWD/nftables/SET_CHNROUTE.nft
+		/opt/de_GWD/nftables/SET_CHNROUTE.nft
+	fi
+
+	echo -e "${WHITE}[ ${YELLOW}⚠ ${WHITE}]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules ${YELLOW}(partial)${cRES}"
+	echo "$(date +%s)|PARTIAL|${failed_items%,}" > "$STATUS_FILE"
+
+	# Track consecutive failures for items that fully failed download
+	local fail_count
+	fail_count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)
+	fail_count=$((fail_count + 1))
+	echo "$fail_count" > "$FAIL_COUNT_FILE"
+	if [[ $fail_count -ge 3 ]]; then
+		touch "/opt/de_GWD/.update_fail_flag"
+	fi
+else
+	echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules ${RED}(all failed)${cRES}"
+	echo "$(date +%s)|FAIL|${failed_items%,}" > "$STATUS_FILE"
+	local fail_count
+	fail_count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)
+	fail_count=$((fail_count + 1))
+	echo "$fail_count" > "$FAIL_COUNT_FILE"
+	if [[ $fail_count -ge 3 ]]; then
+		touch "/opt/de_GWD/.update_fail_flag"
+	fi
 fi
 
-if [[ -n $(openssl x509 -enddate -noout -in /var/www/ssl/de_GWD.cer -checkend 259200 | grep "Certificate will expire") ]] && [[ -d "/root/.acme.sh" ]]; then
-"/root/.acme.sh"/acme.sh --force --set-default-ca  --server letsencrypt
-"/root/.acme.sh"/acme.sh --force --cron --home "/root/.acme.sh"
+# ── SSL certificate renewal ──────────────────────────────────────
 
-sslFolder=$(ls "/root/.acme.sh" | grep '_ecc')
-cp -f "/root/.acme.sh"/$sslFolder/fullchain.cer /var/www/ssl/de_GWD.cer
-cp -f "/root/.acme.sh"/$sslFolder/*.key /var/www/ssl/de_GWD.key
+if [[ -n $(openssl x509 -enddate -noout -in /var/www/ssl/de_GWD.cer -checkend 259200 | grep "Certificate will expire") ]] && [[ -d "/root/.acme.sh" ]]; then
+	"/root/.acme.sh"/acme.sh --force --set-default-ca  --server letsencrypt
+	"/root/.acme.sh"/acme.sh --force --cron --home "/root/.acme.sh"
+
+	sslFolder=$(ls "/root/.acme.sh" | grep '_ecc' || true)
+	[[ -n $sslFolder ]] && {
+		cp -f "/root/.acme.sh"/$sslFolder/fullchain.cer /var/www/ssl/de_GWD.cer
+		cp -f "/root/.acme.sh"/$sslFolder/*.key /var/www/ssl/de_GWD.key
+	}
 fi
 
 [[ $1 = "u" ]] && service cron restart
 
-echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules${cRES}"
+# Clean up staging
+rm -rf "$STAGING"

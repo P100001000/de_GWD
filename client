@@ -16,6 +16,9 @@ TTYD_Ver="1.7.3"
 branch="main"
 
 
+set -euo pipefail
+trap 'rm -f /tmp/de_GWD_* 2>/dev/null' ERR EXIT
+
 installCMD=`cat << EOF
 bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubusercontent.com/P100001000/de_GWD/main/client)
 EOF
@@ -2796,6 +2799,15 @@ if [[ $(du -sk /opt/de_GWD/nftables/IP_CHNROUTE 2>/dev/null | awk '{print$1}') -
 else
   echo -e "${WHITE} ChnrouteIP     \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
+	# Update status from ui_4am
+	if [[ -f "/opt/de_GWD/.update_fail_flag" ]]; then
+	  echo -e "${RED}⚠ Rule update has failed 3+ consecutive times — check network / GitHub access${cRES}"
+	elif [[ -f "/opt/de_GWD/.update_status" ]]; then
+	  upd_status=$(awk -F'|' '{print $2}' /opt/de_GWD/.update_status)
+	  if [[ "$upd_status" == "PARTIAL" ]]; then
+	    echo -e "${YELLOW}⚠ Last rule update: partial failure — some sources unavailable${cRES}"
+	  fi
+	fi
 }
 
 
