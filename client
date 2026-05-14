@@ -19,7 +19,7 @@ branch="main"
 phpVer=""
 
 
-set -euo pipefail
+set -uo pipefail
 trap 'rm -f /tmp/de_GWD_* 2>/dev/null' ERR EXIT
 
 installCMD=`cat << EOF
