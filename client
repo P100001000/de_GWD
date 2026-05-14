@@ -2755,7 +2755,7 @@ else
   echo -e "${WHITE} Nginx          \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'php${phpVer}-fpm') = "active" ]]; then
+if [[ $(systemctl is-active "php${phpVer}-fpm") = "active" ]]; then
   echo -e "${WHITE} php${phpVer}-FPM     \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [ ! -f "/etc/php/${phpVer}/fpm/php-fpm.conf" ]; then
   echo -e "${WHITE} php${phpVer}-FPM     \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
