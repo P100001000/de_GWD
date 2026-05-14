@@ -85,14 +85,18 @@ unset aptPKG
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^zip$') ]] && aptPKG+=(zip)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^docker-ce$') ]] && aptPKG+=(docker-ce)
 phpVer=$(dpkg -l 2>/dev/null | awk '/^ii.*php[0-9]+\.[0-9]+-fpm/ {v=$2; gsub(/.*php/,"",v); gsub(/-fpm.*/,"",v); print v}' | sort -Vr | head -1)
-[[ -z $phpVer ]] && phpVer=$(apt-cache search php 2>/dev/null | awk '/^php[0-9]+\.[0-9]+-fpm/ {v=$1; gsub(/php/,"",v); gsub(/-fpm.*/,"",v); print v}' | sort -Vr | head -1)
+if [[ -z $phpVer ]]; then
+  for v in 8.4 8.3 8.2 8.5 8.1 8.0 7.4; do
+    apt-cache show "php${v}-fpm" >/dev/null 2>&1 && { phpVer="$v"; break; }
+  done
+fi
 [[ -z $phpVer ]] && phpVer="8.4"
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-fpm$") ]] && aptPKG+=(php${phpVer}-fpm)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-cgi$") ]] && aptPKG+=(php${phpVer}-cgi)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-sqlite3$") ]] && aptPKG+=(php${phpVer}-sqlite3)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-xml$") ]] && aptPKG+=(php${phpVer}-xml)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-intl$") ]] && aptPKG+=(php${phpVer}-intl)
-[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-json$") ]] && aptPKG+=(php${phpVer}-json)
+[[ -n $(apt-cache search "^php${phpVer}-json$" 2>/dev/null) ]] && { [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-json$") ]] && aptPKG+=(php${phpVer}-json); }
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^sqlite3$') ]] && aptPKG+=(sqlite3)
 mimallocPkg=$(apt-cache search "^libmimalloc[0-9]" 2>/dev/null | awk '{print$1}' | grep -E '^libmimalloc[0-9.]+$' | head -1)
 [[ -z $mimallocPkg ]] && mimallocPkg="libmimalloc2.0"
