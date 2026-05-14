@@ -118,7 +118,7 @@ if [[ -z $(jq -r '.dns.china' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') 
 fi
 
 for dnsChina in $(jq -r '.dns.china' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$'); do
-    echo "server $dnsChina -group DNS_chn -exclude-default-group" >>/opt/de_GWD/smartdns/smartdns.conf
+    echo "server $dnsChina -group DNS_chn" >>/opt/de_GWD/smartdns/smartdns.conf
 done
 
 

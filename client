@@ -1073,13 +1073,13 @@ bind-tcp 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
 bind 127.0.0.1:5332 -no-speed-check -no-cache -group DNS_global
 bind-tcp 127.0.0.1:5332 -no-speed-check -no-cache -group DNS_global
 
-server 114.114.114.114 -group DNS_chn -exclude-default-group
-server 114.114.115.115 -group DNS_chn -exclude-default-group
-server 119.29.29.29 -group DNS_chn -exclude-default-group
-server 119.28.28.28 -group DNS_chn -exclude-default-group
-server 180.76.76.76 -group DNS_chn -exclude-default-group
-server 223.5.5.5 -group DNS_chn -exclude-default-group
-server 223.6.6.6 -group DNS_chn -exclude-default-group
+server 114.114.114.114 -group DNS_chn
+server 114.114.115.115 -group DNS_chn
+server 119.29.29.29 -group DNS_chn
+server 119.28.28.28 -group DNS_chn
+server 180.76.76.76 -group DNS_chn
+server 223.5.5.5 -group DNS_chn
+server 223.6.6.6 -group DNS_chn
 EOF
 
 kill -9 $(ps -e | grep 'smartdns' | awk '{print$1}') >/dev/null 2>&1
