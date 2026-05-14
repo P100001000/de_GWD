@@ -2718,6 +2718,11 @@ postInstall
 
 serverStatus(){
 echo
+if [[ -z $phpVer ]]; then
+  phpVer=$(dpkg -l 2>/dev/null | awk '/^ii.*php[0-9]+\.[0-9]+-fpm/ {v=$2; gsub(/.*php/,"",v); gsub(/-fpm.*/,"",v); print v}' | sort -Vr | head -1)
+  [[ -z $phpVer ]] && phpVer=$(apt-cache search "^php[0-9.]+-fpm$" 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+' | sort -Vr | head -1)
+  [[ -z $phpVer ]] && phpVer="8.4"
+fi
 if [[ $(systemctl is-active 'smartdns') = "active" ]]; then
   echo -e "${WHITE} SmartDNS       \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/opt/de_GWD/smartdns/smartdns" ]]; then
