@@ -436,7 +436,7 @@ echo
 
 
 de_GWDconnect(){
-if [[ $1 = "u" ]]; then
+if [[ ${1:-} = "u" ]]; then
 echo -e "${WHITE}de_GWD server connect  ${cRES}\c" && echo -e "\t${WHITE}[...]${cRES}\r\c"
 else
 echo -e "\t${WHITE}de_GWD server connect${cRES}\r\c"
@@ -470,8 +470,8 @@ try_connect() {
 serverConnect1=$(try_connect "google.com")
 serverConnect2=$(try_connect "1.1.1.1")
 
-if [[ $1 = "u" ]]; then
-    if [[ $2 = "a" ]]; then
+if [[ ${1:-} = "u" ]]; then
+    if [[ ${2:-} = "a" ]]; then
         preDL
         updateGWD_Green
         [[ -z $serverConnect1 ]] || [[ -z $serverConnect2 ]] && exit
