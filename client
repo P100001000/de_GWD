@@ -1083,6 +1083,8 @@ server 223.6.6.6 -group DNS_chn -exclude-default-group
 EOF
 
 kill -9 $(ps -e | grep 'smartdns' | awk '{print$1}') >/dev/null 2>&1
+systemctl stop coredns 2>/dev/null
+systemctl disable coredns 2>/dev/null
 rm -rf /lib/systemd/system/smartdns.service
 cat << EOF >/etc/systemd/system/smartdns.service
 [Unit]
