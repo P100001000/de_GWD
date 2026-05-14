@@ -2178,7 +2178,7 @@ chown -R www-data:www-data /var/www/html
 chmod -R +x /var/www/html
 chmod +x /opt/de_GWD/*
 
-if [[ $TTYD_UPDATE = "true" ]]; then
+if [[ ${TTYD_UPDATE:-} = "true" ]]; then
 [[ -z $(echo $updatePort | grep '^[[:digit:]]*$') ]] && updatePort="3000"
 
 rm -rf /lib/systemd/system/updateGWD.service
