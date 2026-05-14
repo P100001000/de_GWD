@@ -1151,7 +1151,7 @@ doh1Domain=$(echo $doh1 | cut -d/ -f1 | cut -d: -f1)
 doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short 2>/dev/null | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 [[ -z $doh1IP ]] && doh1IP=$(dig @114.114.114.114 $doh1Domain +short 2>/dev/null | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 
-if [[ -n $doh1IP ]]; then
+if [[ -n ${doh1IP:-} ]]; then
 doh1Port=$(echo $doh1 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
 doh1Path=$(echo $doh1 | cut -d/ -f2)
 
@@ -1177,7 +1177,7 @@ doh2Domain=$(echo $doh2 | cut -d/ -f1 | cut -d: -f1)
 doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short 2>/dev/null | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 [[ -z $doh2IP ]] && doh2IP=$(dig @114.114.114.114 $doh2Domain +short 2>/dev/null | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 
-if [[ -n $doh2IP ]]; then
+if [[ -n ${doh2IP:-} ]]; then
 doh2Port=$(echo $doh2 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
 doh2Path=$(echo $doh2 | cut -d/ -f2)
 
@@ -1214,7 +1214,7 @@ EOF
 fi
 systemctl restart smartdns
 
-if [[ -n $DoGcIP ]]; then
+if [[ -n ${DoGcIP:-} ]]; then
 cat << EOF >/opt/de_GWD/coredns/corefile
 # DoGc_START
 .:5333 {
@@ -2016,7 +2016,7 @@ fi
 [[ -z $(echo $webUIport | grep '^[[:digit:]]*$') ]] && webUIport="443"
 jq --arg webUIport $webUIport '.address.webUIport=$webUIport' /opt/de_GWD/0conf | sponge /opt/de_GWD/0conf
 
-if [[ $webUIport = 443 ]]; then
+if [[ ${webUIport:-} = 443 ]]; then
 cat << EOF >/etc/nginx/conf.d/80.conf
 server {
   listen 80 reuseport;

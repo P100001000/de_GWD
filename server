@@ -1165,7 +1165,7 @@ chmod 644 /var/www/ssl/*.key
 
 
 nginxWebConf(){
-if [[ $port = "443" ]]; then
+if [[ ${port:-} = "443" ]]; then
 cat << EOF >/etc/nginx/conf.d/80.conf
 server {
   listen 80 reuseport;
