@@ -65,14 +65,14 @@
         </a>
       </li>
 
-      <li class="nav-item no-arrow mx-1" style="display:<?php if ($checkJellyfin === installed) echo 'block'; else echo 'none';?>">
+      <li class="nav-item no-arrow mx-1" style="display:<?php if ($checkJellyfin === 'installed') echo 'block'; else echo 'none';?>">
         <a class="nav-link" href="javascript:void(0)" onclick="window.open(location.origin+':8097')">
           <i class="fab fa-youtube"></i>
           <span>Jellyfin</span>
         </a>
       </li>
 
-      <li class="nav-item no-arrow mx-1" style="display:<?php if ($checkBitwarden === installed) echo 'block'; else echo 'none';?>">
+      <li class="nav-item no-arrow mx-1" style="display:<?php if ($checkBitwarden === 'installed') echo 'block'; else echo 'none';?>">
         <a class="nav-link" href="javascript:void(0)" onclick="window.open(location.origin+':8099')">
           <i class="fas fa-shield-alt"></i>
           <span>Bitwarden</span>
