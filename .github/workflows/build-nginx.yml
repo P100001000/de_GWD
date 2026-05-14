@@ -22,6 +22,11 @@ jobs:
               libpcre3-dev zlib1g-dev libxml2-dev libxslt1-dev libgd-dev \
               libgeoip-dev libgoogle-perftools-dev libperl-dev libatomic-ops-dev
 
+            # PCRE (static link)
+            wget -qO /tmp/pcre.tar.bz2 "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2/download" || \
+            wget -qO /tmp/pcre.tar.gz "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz/download"
+            tar xf /tmp/pcre.tar.* -C /tmp
+
             # mimalloc
             wget -qO- https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz | tar xz -C /usr/src
             cd /usr/src/mimalloc-2.1.9
@@ -62,7 +67,7 @@ jobs:
               --with-http_slice_module --with-http_stub_status_module \
               --with-http_xslt_module=dynamic --with-http_perl_module=dynamic \
               --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module \
-              --with-pcre --with-pcre-jit \
+              --with-pcre=/tmp/pcre-8.45 --with-pcre-jit \
               --add-module=/tmp/ngx_brotli --add-module=/tmp/ngx_devel_kit \
               --with-openssl=/tmp/quictls --with-openssl-opt="enable-ktls enable-ec_nistp_64_gcc_128" \
               --with-cc-opt="-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC" \
@@ -90,7 +95,12 @@ jobs:
                 libpcre3-dev zlib1g-dev libxml2-dev libxslt1-dev libgd-dev \
                 libgeoip-dev libgoogle-perftools-dev libperl-dev libatomic-ops-dev
 
-              # mimalloc
+              # PCRE (static link)
+            wget -qO /tmp/pcre.tar.bz2 "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2/download" || \
+            wget -qO /tmp/pcre.tar.gz "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz/download"
+            tar xf /tmp/pcre.tar.* -C /tmp
+
+            # mimalloc
               wget -qO- https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz | tar xz -C /usr/src
               cd /usr/src/mimalloc-2.1.9
               cmake -B out -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_TESTS=OFF
@@ -130,7 +140,7 @@ jobs:
                 --with-http_slice_module --with-http_stub_status_module \
                 --with-http_xslt_module=dynamic --with-http_perl_module=dynamic \
                 --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module \
-                --with-pcre --with-pcre-jit \
+                --with-pcre=/tmp/pcre-8.45 --with-pcre-jit \
                 --add-module=/tmp/ngx_brotli --add-module=/tmp/ngx_devel_kit \
                 --with-openssl=/tmp/quictls --with-openssl-opt="enable-ktls enable-ec_nistp_64_gcc_128" \
                 --with-cc-opt="-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC" \
