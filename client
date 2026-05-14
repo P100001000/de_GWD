@@ -2643,7 +2643,7 @@ cleanDep
 
 preUpdate
 
-if [[ $1 = "auto" ]]; then
+if [[ ${1:-} = "auto" ]]; then
 de_GWDconnect u a
 else
 de_GWDconnect u
