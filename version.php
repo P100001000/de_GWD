@@ -1,4 +1,4 @@
-v1.27.11
+v1.27.12
 -
 <?php
 $str= file_get_contents('https://raw.githubusercontent.com/P100001000/de_GWD/main/version.php');
