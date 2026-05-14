@@ -84,14 +84,18 @@ unset aptPKG
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^socat$') ]] && aptPKG+=(socat)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^zip$') ]] && aptPKG+=(zip)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^docker-ce$') ]] && aptPKG+=(docker-ce)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-fpm$') ]] && aptPKG+=(php7.4-fpm)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-cgi$') ]] && aptPKG+=(php7.4-cgi)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-sqlite3$') ]] && aptPKG+=(php7.4-sqlite3)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-xml$') ]] && aptPKG+=(php7.4-xml)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-intl$') ]] && aptPKG+=(php7.4-intl)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^php7.4-json$') ]] && aptPKG+=(php7.4-json)
+phpVer=$(apt-cache search "^php[0-9]+.[0-9]+-fpm$" 2>/dev/null | sort -V | tail -1 | grep -oP '\d+\.\d+')
+[[ -z $phpVer ]] && phpVer="8.4"
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-fpm$") ]] && aptPKG+=(php${phpVer}-fpm)
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-cgi$") ]] && aptPKG+=(php${phpVer}-cgi)
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-sqlite3$") ]] && aptPKG+=(php${phpVer}-sqlite3)
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-xml$") ]] && aptPKG+=(php${phpVer}-xml)
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-intl$") ]] && aptPKG+=(php${phpVer}-intl)
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^php${phpVer}-json$") ]] && aptPKG+=(php${phpVer}-json)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^sqlite3$') ]] && aptPKG+=(sqlite3)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^libmimalloc2.0') ]] && aptPKG+=(libmimalloc2.0)
+mimallocPkg=$(apt-cache search "^libmimalloc[0-9]" 2>/dev/null | awk '{print$1}' | grep -E '^libmimalloc[0-9.]+$' | head -1)
+[[ -z $mimallocPkg ]] && mimallocPkg="libmimalloc2.0"
+[[ -z $(dpkg -l | awk '{print$2}' | grep "^${mimallocPkg}$") ]] && aptPKG+=($mimallocPkg)
 [[ -n $aptPKG ]] && apt update && apt install $(echo ${aptPKG[@]})
 }
 
@@ -1788,15 +1792,15 @@ rm -rf /var/log/journal/*
 systemctl restart systemd-journald >/dev/null 2>&1
 
 if [[ -d "/usr/local/ioncube" ]]; then
-echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_7.4.so" >/etc/php/7.4/mods-available/ioncube.ini
-ln -sf /etc/php/7.4/mods-available/ioncube.ini /etc/php/7.4/fpm/conf.d/00-ioncube.ini
-ln -sf /etc/php/7.4/mods-available/ioncube.ini /etc/php/7.4/cli/conf.d/00-ioncube.ini
+echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_${phpVer}.so" >/etc/php/${phpVer}/mods-available/ioncube.ini
+ln -sf /etc/php/${phpVer}/mods-available/ioncube.ini /etc/php/${phpVer}/fpm/conf.d/00-ioncube.ini
+ln -sf /etc/php/${phpVer}/mods-available/ioncube.ini /etc/php/${phpVer}/cli/conf.d/00-ioncube.ini
 fi
 
-sed -i "/zend_extension/d" /etc/php/7.4/cli/php.ini
-sed -i "/zend_extension/d" /etc/php/7.4/fpm/php.ini
-sed -i "s/^opcache/;&/" /etc/php/7.4/cli/php.ini
-sed -i "s/^opcache/;&/" /etc/php/7.4/fpm/php.ini
+sed -i "/zend_extension/d" /etc/php/${phpVer}/cli/php.ini
+sed -i "/zend_extension/d" /etc/php/${phpVer}/fpm/php.ini
+sed -i "s/^opcache/;&/" /etc/php/${phpVer}/cli/php.ini
+sed -i "s/^opcache/;&/" /etc/php/${phpVer}/fpm/php.ini
 
 cat << EOF >/etc/php/00-init.ini
 expose_php              = Off
@@ -1841,13 +1845,13 @@ session.cookie_lifetime  = 0
 session.cookie_httponly  = 1
 session.cookie_secure    = 1
 EOF
-ln -sf /etc/php/00-init.ini /etc/php/7.4/cli/conf.d/00-init.ini
-ln -sf /etc/php/00-init.ini /etc/php/7.4/fpm/conf.d/00-init.ini
+ln -sf /etc/php/00-init.ini /etc/php/${phpVer}/cli/conf.d/00-init.ini
+ln -sf /etc/php/00-init.ini /etc/php/${phpVer}/fpm/conf.d/00-init.ini
 
-rm -rf /etc/php/7.4/fpm/pool.d
-cat << EOF >/etc/php/7.4/fpm/php-fpm.conf
+rm -rf /etc/php/${phpVer}/fpm/pool.d
+cat << EOF >/etc/php/${phpVer}/fpm/php-fpm.conf
 [global]
-pid = /run/php/php7.4-fpm.pid
+pid = /run/php/php${phpVer}-fpm.pid
 error_log = /var/log/php.log
 
 [www]
@@ -1856,7 +1860,7 @@ group = www-data
 listen.owner = www-data
 listen.group = www-data
 listen.mode = 0666
-listen = /run/php/php7.4-fpm.sock
+listen = /run/php/php${phpVer}-fpm.sock
 listen.backlog = -1
 listen.allowed_clients = 127.0.0.1
 
@@ -1876,7 +1880,7 @@ env[TEMP] = /tmp
 env[TMPDIR] = /tmp
 EOF
 
-cat << EOF >/etc/php/7.4/mods-available/opcache.ini
+cat << EOF >/etc/php/${phpVer}/mods-available/opcache.ini
 ; configuration for php opcache module
 ; priority=10
 zend_extension=opcache.so
@@ -1894,18 +1898,18 @@ opcache.save_comments=1
 EOF
 
 rm -rf /var/log/php.log
-rm -rf /run/php7.4-fpm.pid
-rm -rf /lib/systemd/system/php7.4-fpm.service
-cat << EOF >/etc/systemd/system/php7.4-fpm.service
+rm -rf /run/php${phpVer}-fpm.pid
+rm -rf /lib/systemd/system/php${phpVer}-fpm.service
+cat << EOF >/etc/systemd/system/php${phpVer}-fpm.service
 [Unit]
-Description=The PHP 7.4 FastCGI Process Manager
+Description=The PHP ${phpVer} FastCGI Process Manager
 After=network.target
 
 [Service]
 Type=simple
-PIDFile=/run/php7.4-fpm.pid
+PIDFile=/run/php${phpVer}-fpm.pid
 ExecStartPre=/usr/bin/touch /var/log/php.log
-ExecStart=/usr/sbin/php-fpm7.4 --nodaemonize --fpm-config /etc/php/7.4/fpm/php-fpm.conf
+ExecStart=/usr/sbin/php-fpm${phpVer} --nodaemonize --fpm-config /etc/php/${phpVer}/fpm/php-fpm.conf
 ExecReload=$(which kill) -USR2 \$MAINPID
 Restart=always
 RestartSec=2
@@ -1915,8 +1919,8 @@ TimeoutStopSec=5
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload >/dev/null
-systemctl enable php7.4-fpm >/dev/null 2>&1
-systemctl restart php7.4-fpm
+systemctl enable php${phpVer}-fpm >/dev/null 2>&1
+systemctl restart php${phpVer}-fpm
 
 echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Dependencies${cRES}"
 }
@@ -2104,7 +2108,7 @@ location ~ [^/]\.php(/|$) {
 
   include               fastcgi_params;
   fastcgi_param         SCRIPT_FILENAME   \$document_root\$fastcgi_script_name;
-  fastcgi_pass          unix:/run/php/php7.4-fpm.sock;
+  fastcgi_pass          unix:/run/php/php${phpVer}-fpm.sock;
   fastcgi_index         index.php;
 }
 # PHP_END
@@ -2744,12 +2748,12 @@ else
   echo -e "${WHITE} Nginx          \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'php7.4-fpm') = "active" ]]; then
-  echo -e "${WHITE} php7.4-FPM     \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
-elif [ ! -f "/etc/php/7.4/fpm/php-fpm.conf" ]; then
-  echo -e "${WHITE} php7.4-FPM     \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
+if [[ $(systemctl is-active 'php${phpVer}-fpm') = "active" ]]; then
+  echo -e "${WHITE} php${phpVer}-FPM     \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
+elif [ ! -f "/etc/php/${phpVer}/fpm/php-fpm.conf" ]; then
+  echo -e "${WHITE} php${phpVer}-FPM     \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
 else
-  echo -e "${WHITE} php7.4-FPM     \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
+  echo -e "${WHITE} php${phpVer}-FPM     \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
 if [[ -n $(crontab -l 2>&1 | grep "autoUpdate") ]] && [[ -f "/opt/de_GWD/autoUpdate" ]]; then
