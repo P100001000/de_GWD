@@ -1397,6 +1397,12 @@ echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Deploy vtrui${
 
 
 installNftables(){
+DoGcIP=""
+IP_CHNROUTE_elements=""
+IP_listB_elements=""
+IP_listW_elements=""
+IP_listBlan_elements=""
+IP_listWlan_elements=""
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Deploy nftables${cRES}\r\c"
 cat << EOF >/etc/network/interfaces
 source /etc/network/interfaces.d/*
