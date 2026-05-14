@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NGINX_VERSION: 1.30.1
+
 jobs:
   build-amd64:
     runs-on: ubuntu-24.04
@@ -13,32 +16,16 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential gcc g++ make zlib1g-dev \
-            libxml2-dev libxslt1-dev libgd-dev libgeoip-dev \
-            libgoogle-perftools-dev libperl-dev perl git cmake wget libatomic-ops-dev
-
-      - name: Download PCRE source
-        run: |
-          # Try multiple mirrors for PCRE 8.45
-          wget -qO /tmp/pcre.tar.bz2 "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2/download" || \
-          wget -qO /tmp/pcre.tar.gz "https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz/download" || \
-          wget -qO /tmp/pcre.tar.bz2 "https://netcologne.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.bz2" || \
-          wget -qO /tmp/pcre.tar.gz "https://managedway.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz"
-          if tar xf /tmp/pcre.tar.* -C /tmp 2>/dev/null; then
-            echo "PCRE extracted successfully"
-          else
-            echo "PCRE download failed, using system libpcre3-dev"
-            sudo apt install -y libpcre3-dev
-            touch /tmp/use_system_pcre
-          fi
+          sudo apt install -y build-essential gcc g++ make cmake git wget perl \
+            libpcre3-dev zlib1g-dev libxml2-dev libxslt1-dev libgd-dev \
+            libgeoip-dev libgoogle-perftools-dev libperl-dev libatomic-ops-dev
 
       - name: Build mimalloc
         run: |
-          wget -qO /tmp/mimalloc.tar.gz https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz
-          mkdir -p /tmp/mimalloc-src && tar xzf /tmp/mimalloc.tar.gz -C /tmp/mimalloc-src --strip-components=1
-          cd /tmp/mimalloc-src
+          wget -qO- https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz | sudo tar xz -C /usr/src
+          cd /usr/src/mimalloc-2.1.9
           cmake -B out -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_TESTS=OFF
-          make -C out -j$(nproc) && sudo make -C out install && sudo ldconfig
+          make -C out -j$(nproc) && sudo cp out/libmimalloc.so* /usr/local/lib/ && sudo ldconfig
 
       - name: Build quictls (OpenSSL + QUIC)
         run: |
@@ -56,15 +43,12 @@ jobs:
       - name: Build nginx amd64
         run: |
           set -e
-          wget -qO /tmp/nginx.tar.gz https://nginx.org/download/nginx-1.30.1.tar.gz
+          wget -qO /tmp/nginx.tar.gz https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
           tar xzf /tmp/nginx.tar.gz -C /tmp
-          cd /tmp/nginx-1.30.1
-          # Build configure args
-          PCRE_ARG="--with-pcre=/tmp/pcre-8.45 --with-pcre-jit"
-          if [ -f /tmp/use_system_pcre ]; then
-            PCRE_ARG="--with-pcre --with-pcre-jit"
-          fi
-          ./configure --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules \
+          cd /tmp/nginx-${NGINX_VERSION}
+          echo "=== Starting configure ==="
+          ./configure \
+            --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules \
             --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log \
             --http-log-path=/var/log/nginx/access.log --pid-path=/run/nginx.pid --lock-path=/run/nginx.lock \
             --http-client-body-temp-path=/var/cache/nginx/client_temp \
@@ -82,21 +66,25 @@ jobs:
             --with-http_slice_module --with-http_stub_status_module \
             --with-http_xslt_module=dynamic --with-http_perl_module=dynamic \
             --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module \
-            $PCRE_ARG \
+            --with-pcre --with-pcre-jit \
             --add-module=/tmp/ngx_brotli --add-module=/tmp/ngx_devel_kit \
             --with-openssl=/tmp/quictls --with-openssl-opt='enable-ktls enable-ec_nistp_64_gcc_128' \
             --with-cc-opt='-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC' \
-            --with-ld-opt="-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -Wl,-z,relro -Wl,-z,now -Wl,-E -Wl,--as-needed -fPIC -L /usr/local/lib -lmimalloc"
-          if ! make -j$(nproc); then
-            echo "=== CONFIGURE ERROR LOG ==="
+            --with-ld-opt="-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -Wl,-z,relro -Wl,-z,now -Wl,-E -Wl,--as-needed -fPIC -L /usr/local/lib -lmimalloc" \
+            2>&1 | tail -30
+
+          echo "=== Starting make ==="
+          if ! make -j$(nproc) 2>&1 | tail -100; then
+            echo "=== ERROR: make failed. Checking logs ==="
             cat objs/autoconf.err 2>/dev/null || true
-            echo "=== CONFIG.LOG (last 100 lines) ==="
-            tail -100 config.log 2>/dev/null || true
+            tail -200 config.log 2>/dev/null || true
             exit 1
           fi
-          strip -s objs/nginx && mv objs/nginx /tmp/nginx-amd64
+          strip -s objs/nginx
+          mv objs/nginx /tmp/nginx-amd64
+          echo "=== Build SUCCESS ==="
 
-      - name: Upload amd64 binary
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: nginx-amd64
@@ -113,29 +101,29 @@ jobs:
 
       - name: Build nginx for arm64 via Docker
         run: |
+          set -e
           docker run --platform linux/arm64 -v /tmp:/tmp --rm \
-            debian:bookworm-slim bash -c "
-              apt update && apt install -y wget xz-utils build-essential gcc g++ make \
-                zlib1g-dev libxml2-dev libxslt1-dev libgd-dev libgeoip-dev \
-                libgoogle-perftools-dev libperl-dev perl git cmake libatomic-ops-dev
-
-              # PCRE
-              wget -qO /tmp/pcre.tar.bz2 https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2
-              tar xf /tmp/pcre.tar.bz2 -C /tmp
+            debian:bookworm-slim bash -exc '
+              export DEBIAN_FRONTEND=noninteractive
+              apt update && apt install -y wget xz-utils build-essential gcc g++ make cmake git perl \
+                libpcre3-dev zlib1g-dev libxml2-dev libxslt1-dev libgd-dev \
+                libgeoip-dev libgoogle-perftools-dev libperl-dev libatomic-ops-dev
 
               # mimalloc
-              wget -qO /tmp/mimalloc.tar.gz https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz
-              mkdir -p /tmp/mimalloc-src && tar xzf /tmp/mimalloc.tar.gz -C /tmp/mimalloc-src --strip-components=1
-              cd /tmp/mimalloc-src && cmake -B out -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_TESTS=OFF && make -C out -j\$(nproc) && make -C out install && ldconfig
+              wget -qO- https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.9.tar.gz | tar xz -C /usr/src
+              cd /usr/src/mimalloc-2.1.9
+              cmake -B out -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_TESTS=OFF
+              make -C out -j$(nproc)
+              cp out/libmimalloc.so* /usr/local/lib/ && ldconfig
 
               # quictls
               git clone --depth 1 --branch openssl-3.3.0-quic1 https://github.com/quictls/openssl.git /tmp/quictls
               cd /tmp/quictls
               ./Configure linux-aarch64 --prefix=/usr/local/quictls --openssldir=/usr/local/quictls/ssl \
                 enable-ktls enable-ec_nistp_64_gcc_128 shared
-              make -j\$(nproc) && make install
+              make -j$(nproc) && make install
 
-              # nginx modules
+              # modules
               git clone --depth 1 --recurse-submodules https://github.com/google/ngx_brotli.git /tmp/ngx_brotli
               git clone --depth 1 https://github.com/vision5/ngx_devel_kit.git /tmp/ngx_devel_kit
 
@@ -161,15 +149,16 @@ jobs:
                 --with-http_slice_module --with-http_stub_status_module \
                 --with-http_xslt_module=dynamic --with-http_perl_module=dynamic \
                 --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module \
-                $PCRE_ARG \
+                --with-pcre --with-pcre-jit \
                 --add-module=/tmp/ngx_brotli --add-module=/tmp/ngx_devel_kit \
-                --with-openssl=/tmp/quictls --with-openssl-opt='enable-ktls enable-ec_nistp_64_gcc_128' \
-                --with-cc-opt='-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC' \
-                --with-ld-opt='-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -Wl,-z,relro -Wl,-z,now -Wl,-E -Wl,--as-needed -fPIC -L /usr/local/lib -lmimalloc'
-              make -j\$(nproc) && strip -s objs/nginx && cp objs/nginx /tmp/nginx-arm64
-            "
+                --with-openssl=/tmp/quictls --with-openssl-opt="enable-ktls enable-ec_nistp_64_gcc_128" \
+                --with-cc-opt="-g -O3 -pipe -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23 -mtune=generic -fPIC" \
+                --with-ld-opt="-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -Wl,-z,relro -Wl,-z,now -Wl,-E -Wl,--as-needed -fPIC -L /usr/local/lib -lmimalloc"
+              make -j$(nproc) && strip -s objs/nginx && cp objs/nginx /tmp/nginx-arm64
+              echo "=== Arm64 Build SUCCESS ==="
+            '
 
-      - name: Upload arm64 binary
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: nginx-arm64
