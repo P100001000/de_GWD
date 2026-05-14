@@ -79,18 +79,12 @@ jobs:
           compression-level: 0
 
   build-arm64:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     steps:
-      - name: Set up QEMU for arm64 emulation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Build nginx for arm64 via Docker
+      - name: Build nginx arm64 via Docker
         run: |
           set -e
-          docker run --platform linux/arm64 -v /tmp:/tmp --rm \
-            debian:bookworm-slim bash -exc '
+          docker run -v /tmp:/tmp --rm debian:bookworm-slim bash -exc '
               export DEBIAN_FRONTEND=noninteractive
               apt update && apt install -y wget xz-utils build-essential gcc g++ make cmake git perl \
                 libpcre3-dev zlib1g-dev libxml2-dev libxslt1-dev libgd-dev \
