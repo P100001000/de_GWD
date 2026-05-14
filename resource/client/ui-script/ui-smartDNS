@@ -85,8 +85,10 @@ fi
 cat << EOF >/opt/de_GWD/smartdns/smartdns.conf
 server-name smartdns
 
-bind 127.0.0.1:5331
-bind-tcp 127.0.0.1:5331
+bind :53
+
+bind 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
+bind-tcp 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
 
 bind 127.0.0.1:5332 -group DNS_global -no-speed-check -no-cache
 bind-tcp 127.0.0.1:5332 -group DNS_global -no-speed-check -no-cache
@@ -116,20 +118,20 @@ if [[ -z $(jq -r '.dns.china' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') 
 fi
 
 for dnsChina in $(jq -r '.dns.china' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$'); do
-    echo "server $dnsChina" >>/opt/de_GWD/smartdns/smartdns.conf
+    echo "server $dnsChina -group DNS_chn -exclude-default-group" >>/opt/de_GWD/smartdns/smartdns.conf
 done
 
 
 if [[ -n $doh1IP ]]; then
-echo "server-https https://$doh1Str -host-name $doh1Domain -no-check-certificate -group DNS_global -exclude-default-group" >>/opt/de_GWD/smartdns/smartdns.conf
+echo "server-https https://$doh1Str -host-name $doh1Domain -no-check-certificate -group DNS_global" >>/opt/de_GWD/smartdns/smartdns.conf
 fi
 
 if [[ -n $doh2IP ]]; then
-echo "server-https https://$doh2Str -host-name $doh2Domain -no-check-certificate -group DNS_global -exclude-default-group" >>/opt/de_GWD/smartdns/smartdns.conf
+echo "server-https https://$doh2Str -host-name $doh2Domain -no-check-certificate -group DNS_global" >>/opt/de_GWD/smartdns/smartdns.conf
 fi
 
 if [[ -n $DoGcIP ]]; then
-echo "server-tcp 127.0.0.1:5333" >>/opt/de_GWD/smartdns/smartdns.conf
+echo "server-tcp 127.0.0.1:5333 -group DNS_global" >>/opt/de_GWD/smartdns/smartdns.conf
 fi
 
 doh1re_origin=$(jq -r '.dns.doh1re' /opt/de_GWD/0conf)
