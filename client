@@ -2302,7 +2302,7 @@ all-servers
 filter-AAAA
 EOF
 
-find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | grep -v 'veth' | awk -F'/' '{print$NF}' | xargs -I {} echo "interface={}" >/etc/dnsmasq.d/00-interface.conf
+find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | grep -v 'veth' | grep -v 'ifb' | grep -v 'docker' | awk -F'/' '{print$NF}' | xargs -I {} echo "interface={}" >/etc/dnsmasq.d/00-interface.conf
 
 echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole Config ${cRES}"
 }
