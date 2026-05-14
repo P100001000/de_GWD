@@ -11,6 +11,7 @@ cRES='\E[0m'
 
 chmod 777 /tmp
 architecture=$(dpkg --print-architecture)
+virt_type=""
 [[ "openvz lxc lxc-libvirt systemd-nspawn docker podman proot pouch" =~ $(systemd-detect-virt) ]] && virt_type="container"
 export DEBIAN_FRONTEND=noninteractive
 branch="main"
