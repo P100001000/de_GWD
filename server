@@ -30,7 +30,7 @@ pkgDEP(){
 [[ -n $(dpkg -l | awk '{print$2}' | grep '^os-prober$') ]] && apt remove --purge os-prober
 [[ -n $(dpkg -l | awk '{print$2}' | grep '^systemd-timesyncd$') ]] && apt remove --purge systemd-timesyncd
 
-unset aptPKG
+aptPKG=()
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^sudo$') ]] && aptPKG+=(sudo)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^wget$') ]] && aptPKG+=(wget)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^curl$') ]] && aptPKG+=(curl)
@@ -1631,7 +1631,7 @@ echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Update kernel 
 else
 localAddrIPv4=$(ip -4 a | grep inet | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1 | head -n 1)
 if [[ -n $localAddrIPv4 ]]; then
-unset aptPKG
+aptPKG=()
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^wireguard-tools$') ]] && aptPKG+=(wireguard-tools)
 [[ -n $aptPKG ]] && apt update && apt install $(echo ${aptPKG[@]})
 
@@ -1771,7 +1771,7 @@ if [[ $tcpPFsw = "1" ]]; then
 upDomain=$(echo $upDomainP | cut -d: -f1)
 upPort=$(echo $upDomainP | cut -d: -f2| grep '^[[:digit:]]*$')
 
-unset aptPKG
+aptPKG=()
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^haproxy$') ]] && aptPKG+=(haproxy)
 [[ -n $aptPKG ]] && apt update && apt install $(echo ${aptPKG[@]})
 

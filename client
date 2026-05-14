@@ -34,7 +34,7 @@ fi
 
 pkgDEP1(){
 if [[ $architecture = "arm64" ]];then
-unset Freeze_Package
+Freeze_Package=()
 Freeze_Package+=($(dpkg -l | grep 'linux-u-boot-' | awk '{print $2}'))
 Freeze_Package+=($(dpkg -l | grep 'linux-image-' | awk '{print $2}'))
 Freeze_Package+=($(dpkg -l | grep 'linux-headers-' | awk '{print $2}'))
@@ -48,7 +48,7 @@ fi
 [[ -n $(dpkg -l | awk '{print$2}' | grep '^os-prober$') ]] && apt remove --purge os-prober
 [[ -n $(dpkg -l | awk '{print$2}' | grep '^systemd-timesyncd$') ]] && apt remove --purge systemd-timesyncd
 
-unset aptPKG
+aptPKG=()
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^sudo$') ]] && aptPKG+=(sudo)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^wget$') ]] && aptPKG+=(wget)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^curl$') ]] && aptPKG+=(curl)
@@ -79,7 +79,7 @@ curl -fsSL https://download.docker.com/linux/debian/gpg | install -m 0644 -D /de
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1) stable" >/etc/apt/sources.list.d/docker.list
 
 
-unset aptPKG
+aptPKG=()
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^python3-toml$') ]] && aptPKG+=(python3-toml)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^psmisc$') ]] && aptPKG+=(psmisc)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^dns-root-data$') ]] && aptPKG+=(dns-root-data)
