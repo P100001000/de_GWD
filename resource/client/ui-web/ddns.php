@@ -41,7 +41,7 @@
 <?php $FileRunWebConf = file_get_contents ('/etc/nginx/conf.d/filerun.conf'); preg_match_all('/(?<=\blisten )\S+/is', $FileRunWebConf, $FileRunPort); $FileRunPort = $FileRunPort[0][0] ?>
 <?php $WebConf = file_get_contents ('/etc/nginx/conf.d/default.conf'); preg_match_all('/(?<=\bserver_name )\S+/is', $WebConf, $serverName); $serverName = rtrim($serverName[0][0],";") ?>
 
-<?php $checkWGinstall = exec('sudo dpkg -l | grep " wireguard-tools "')?>
+<?php $checkWGinstall = exec('sudo dpkg -l 2>/dev/null | grep " wireguard-tools "')?>
   <nav class="navbar navbar-expand navbar-dark bg-dark static-top">
 
     <a class="navbar-brand mr-1" href="index.php">GWD AI</a>
@@ -302,10 +302,10 @@
           </div>
           <div id="WGbody" class="card-body" style="display:none">
 <?php
-  $sprivatekey = $de_GWDconf->wireguard->server->sprivatekey;
-  $spublickey = $de_GWDconf->wireguard->server->spublickey;
-  $WGaddress = $de_GWDconf->wireguard->server->WGaddress;
-  $WGport = $de_GWDconf->wireguard->server->WGport;
+		$sprivatekey = $de_GWDconf->wireguard->server->sprivatekey ?? '';
+		$spublickey = $de_GWDconf->wireguard->server->spublickey ?? '';
+		$WGaddress = $de_GWDconf->wireguard->server->WGaddress ?? '';
+		$WGport = $de_GWDconf->wireguard->server->WGport ?? '';
 
   if ($sprivatekey == null || $sprivatekey == '')
   {
@@ -339,7 +339,7 @@ EOT;
 
 <div id="WGclients" class="form-row mb-1">
 <?php
-for( $i=0; $i<count($de_GWDconf->wireguard->clients); $i++){
+for( $i=0; $i<count($de_GWDconf->wireguard->clients ?? []); $i++){
   $nodeNUM = $i+1;
   $cprivatekey = $de_GWDconf->wireguard->clients[$i]->cprivatekey;
   $cpublickey = $de_GWDconf->wireguard->clients[$i]->cpublickey;

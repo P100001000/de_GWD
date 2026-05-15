@@ -1,0 +1,28 @@
+#!/bin/bash
+# 随机测试10个国内服务 DNS 分流是否正确
+# 用于每次更新后的验证
+
+DOMAINS=(
+baidu.com taobao.com tmall.com jd.com qq.com weibo.com zhihu.com
+bilibili.com toutiao.com douyin.com kuaishou.com meituan.com
+dianping.com ctrip.com alipay.com 163.com sina.com.cn sohu.com
+sogou.com 360.cn hao123.com mi.com huawei.com iqiyi.com youku.com
+mgtv.com alibaba.com 1688.com csdn.net cnblogs.com douban.com
+pinduoduo.com vip.com suning.com dangdang.com xiaohongshu.com
+huya.com douyu.com smzdm.com autohome.com.cn 58.com lianjia.com
+)
+
+# 随机选取10个
+shuf -n 10 --random-source=/dev/urandom <(printf '%s\n' "${DOMAINS[@]}") | while read domain; do
+    result=$(dig +short "$domain" @127.0.0.1 2>/dev/null | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+    cname=$(dig +short "$domain" @127.0.0.1 2>/dev/null | head -1)
+    if [[ -z "$result" ]]; then
+        echo "[FAIL] $domain → 无解析"
+    elif nft get element ip de_GWD CHNROUTE { $result } 2>&1 | grep -q Error; then
+        echo "[FAIL] $domain → $result (国外IP/走代理)"
+    elif echo "$cname" | grep -qiE 'queniuk|queniuu|queniuy' 2>/dev/null; then
+        echo "[WARN] $domain → $result (CNAME 被篡改但IP属国内)"
+    else
+        echo "[OK]   $domain → $result"
+    fi
+done

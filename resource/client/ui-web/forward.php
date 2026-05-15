@@ -34,16 +34,16 @@
 
 <body id="page-top" class="sidebar-toggled">
 <?php $de_GWDconf = json_decode(file_get_contents('/opt/de_GWD/0conf')); ?>
-<?php $checkJellyfin = $de_GWDconf->app->jellyfin; ?>
+<?php $checkJellyfin = $de_GWDconf->app->jellyfin ?? ''; ?>
 <?php $checkFileRun = file_exists('/var/www/html/filerun'); ?>
-<?php $checkBitwarden = $de_GWDconf->app->bitwarden; ?>
+<?php $checkBitwarden = $de_GWDconf->app->bitwarden ?? ''; ?>
 
 <?php $checkCer = file_exists('/var/www/ssl/de_GWD.cer'); ?>
 
 <?php $checkcoredns = exec('sudo systemctl is-active coredns'); ?>
 <?php $DoGsConf = strpos(file_get_contents('/opt/de_GWD/coredns/corefile'),'grpc://.:');?>
 
-<?php $checkBlock53 = $de_GWDconf->FORWARD->block53; ?>
+<?php $checkBlock53 = $de_GWDconf->FORWARD->block53 ?? false; ?>
 
 <?php $checkVtrui = exec('sudo systemctl is-active vtrui'); ?>
 <?php $vtruiConf = json_decode(file_get_contents('/opt/de_GWD/vtrui/config.json')); ?>
@@ -172,7 +172,7 @@
         <h5 id="markThisLabel" class="modal-title">备注本机</h5>
       </div>
       <div class="modal-body">
-        <input id="markName" type="text" class="form-control" placeholder="备注名" required="required" value="<?php echo $de_GWDconf->address->alias ?>">
+        <input id="markName" type="text" class="form-control" placeholder="备注名" required="required" value="<?php echo $de_GWDconf->address->alias ?? '' ?>">
       </div>
       <div class="modal-footer">
         <button id="buttonMarkThis" type="button" class="btn btn-outline-dark btn-sm">应用</button>
@@ -205,7 +205,7 @@
                 <div class="input-group-prepend">
                   <span class="input-group-text justify-content-center" style="min-width: 120px;">域名</span>
                 </div>
-                  <input id="CFdomain" type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>">
+                  <input id="CFdomain" type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>">
               </div>
 
               <div class="col-md-5 input-group my-2">
@@ -261,7 +261,7 @@
                 <div class="input-group-prepend">
                   <span class="input-group-text">地址</span>
                 </div>
-                <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>:<?php echo $de_GWDconf->FORWARD->DoGs->port ?>" READONLY>
+                <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>:<?php echo $de_GWDconf->FORWARD->DoGs->port ?>" READONLY>
               </div>
             </div>
           </div>
@@ -319,7 +319,7 @@
                   <div class="input-group-prepend">
                     <span class="input-group-text">地址</span>
                   </div>
-                  <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>:<?php echo $de_GWDconf->FORWARD->FWD0->port ?>" READONLY>
+                  <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>:<?php echo $de_GWDconf->FORWARD->FWD0->port ?>" READONLY>
                 </div>
               </div>
 
@@ -407,7 +407,7 @@ EOT;
                   <div class="input-group-prepend">
                     <span class="input-group-text">地址</span>
                   </div>
-                  <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>:<?php echo $de_GWDconf->FORWARD->FWD1->port ?>" READONLY>
+                  <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>:<?php echo $de_GWDconf->FORWARD->FWD1->port ?>" READONLY>
                 </div>
 
 <div class="btn-group">
@@ -504,7 +504,7 @@ EOT;
                 <div class="input-group-prepend">
                   <span class="input-group-text">对接地址</span>
                 </div>
-                <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>:<?php echo $de_GWDconf->FORWARD->Rproxy->server->tunnel->port ?>" READONLY>
+                <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>:<?php echo $de_GWDconf->FORWARD->Rproxy->server->tunnel->port ?>" READONLY>
               </div>
 
               <div class="col-md-7 input-group my-2">
@@ -533,7 +533,7 @@ EOT;
                     <div class="input-group-prepend">
                       <span class="input-group-text">连入地址</span>
                     </div>
-                    <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?>:<?php echo $de_GWDconf->FORWARD->Rproxy->server->tunnel->port ?>" READONLY>
+                    <input type="text" class="form-control" value="<?php echo $de_GWDconf->FORWARD->domain ?? '' ?>:<?php echo $de_GWDconf->FORWARD->Rproxy->server->tunnel->port ?>" READONLY>
                   </div>
                   </div>
 

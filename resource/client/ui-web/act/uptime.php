@@ -1,4 +1,4 @@
-<?php ob_start(ob_gzhandler); ?> 
+<?php ob_start("ob_gzhandler"); ?>
 <?php 
 function sys_linux() 
  { 

@@ -9,8 +9,6 @@ CYAN='\E[1;36m'
 WHITE='\E[1;37m'
 cRES='\E[0m'
 
-
-
 installWGcore(){
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Install Wireguard${cRES}\r\c"
 uname -r 2>&1 | grep -o '[0-9.]*' | head -n 1 >/tmp/kernelVer
@@ -20,8 +18,8 @@ if [[ $(cat /tmp/kernelVer | sort -rV | head -n 1) = "5.6" ]]; then
     echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Update kernel first ! ${cRES}"
 else
     unset aptPKG
-    [[ -z $(dpkg -l | awk '{print$2}' | grep '^wireguard-tools$') ]] && aptPKG+=(wireguard-tools)
-    [[ -n $aptPKG ]] && apt update && apt install $(echo ${aptPKG[@]})
+    [[ -z $(dpkg -l 2>/dev/null | awk '{print$2}' | grep '^wireguard-tools$') ]] && aptPKG+=(wireguard-tools)
+    [[ -n $aptPKG ]] && apt update && DEBIAN_FRONTEND=noninteractive apt install -y $(echo ${aptPKG[@]})
 
     if [[ -z $(jq -r '.wireguard.server.sprivatekey' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') ]]; then
         /opt/de_GWD/ui-WGgenSkey
@@ -32,26 +30,31 @@ rm -rf /tmp/kernelVer
 echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Install Wireguard${cRES}"
 }
 
-
-start_menu(){
-    echo -e "${GREEN}=============================== ${cRES}"
-    echo -e "${GREEN}         Wireguard${cRES}"
-    echo -e "${GREEN}=============================== ${cRES}"
-    echo -e "${GREEN}1. Install Wireguard${cRES}"
-    echo ""
-    read -p "Select:" num
-    case "$num" in
-    1)
+# Auto-install mode: run directly without interactive menu
+# When TTY is available (ttyd), show the menu for manual control
+if [[ -t 0 ]]; then
+    start_menu(){
+        echo -e "${GREEN}=============================== ${cRES}"
+        echo -e "${GREEN}         Wireguard${cRES}"
+        echo -e "${GREEN}=============================== ${cRES}"
+        echo -e "${GREEN}1. Install Wireguard${cRES}"
+        echo ""
+        read -p "Select:" num
+        case "$num" in
+        1)
+        installWGcore
+        start_menu
+        ;;
+        *)
+        clear
+        echo -e "${RED}Wrong number${cRES}"
+        sleep 1s
+        start_menu
+        ;;
+        esac
+    }
+    start_menu
+else
+    # Non-interactive mode for direct invocation
     installWGcore
-    start_menu
-    ;;
-    *)
-    clear
-    echo -e "${RED}Wrong number${cRES}"
-    sleep 1s
-    start_menu
-    ;;
-    esac
-}
-
-start_menu
+fi
