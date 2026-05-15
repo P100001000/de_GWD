@@ -8,10 +8,10 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="de_GWD">
+  <meta name="description" content="GWD AI">
   <meta name="author" content="JacyL4">
 
-<title>寒月</title>
+<title>GWD AI</title>
 
   <!-- Custom fonts for this template-->
   <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -43,7 +43,7 @@
 <?php $WebConf = file_get_contents ('/etc/nginx/conf.d/default.conf'); preg_match_all('/(?<=\bserver_name )\S+/is', $WebConf, $serverName); $serverName = rtrim($serverName[0][0],";") ?>
   <nav class="navbar navbar-expand navbar-dark bg-dark static-top">
 
-    <a class="navbar-brand mr-1" href="index.php">寒月</a>
+    <a class="navbar-brand mr-1" href="index.php">GWD AI</a>
     <button class="btn btn-sm btn-outline-light mx-3" data-toggle="modal" data-target="#markThis">备注本机</button>
 
     <button id="sidebarToggle" class="btn btn-link btn-sm text-white order-1 order-sm-0" href="#">
@@ -846,7 +846,7 @@ foreach(array_unique($dnsClist[0]) as $k => $v){
       <footer class="sticky-footer">
         <div class="container my-auto">
           <div class="copyright text-center my-auto">
-            <span>Copyright © de_GWD by JacyL4 2017 ~ 2025</span>
+            <span>Copyright © GWD AI by JacyL4 2017 ~ 2025</span>
           </div>
         </div>
       </footer>

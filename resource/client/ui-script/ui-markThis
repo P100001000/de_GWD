@@ -1,7 +1,7 @@
 #!/bin/bash
 markName=$(jq -r '.address.alias' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$')
 
-sed -i "/<title>/c\<title>$markName \ 寒月</title>" /var/www/html/index.php
+sed -i "/<title>/c\<title>$markName \ GWD AI</title>" /var/www/html/index.php
 sed -i "/<title>/c\<title>$markName \ 中转</title>" /var/www/html/forward.php
 sed -i "/<title>/c\<title>$markName \ DDNS & Wireguard</title>" /var/www/html/ddns.php
 sed -i "/<title>/c\<title>$markName \ 应用</title>" /var/www/html/app.php

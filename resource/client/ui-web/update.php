@@ -43,7 +43,7 @@
 <?php $checkAutoUpdateStatus = file_exists('/opt/de_GWD/autoUpdate'); ?>
   <nav class="navbar navbar-expand navbar-dark bg-dark static-top">
 
-    <a class="navbar-brand mr-1" href="index.php">寒月</a>
+    <a class="navbar-brand mr-1" href="index.php">GWD AI</a>
     <button class="btn btn-sm btn-outline-light mx-3" data-toggle="modal" data-target="#markThis">备注本机</button>
 
     <button id="sidebarToggle" class="btn btn-link btn-sm text-white order-1 order-sm-0" href="javascript:void(0)">
@@ -285,7 +285,7 @@ EOT;
       <footer class="sticky-footer">
         <div class="container my-auto">
           <div class="copyright text-center my-auto">
-            <span>Copyright © de_GWD by JacyL4 2017 ~ 2025</span>
+            <span>Copyright © GWD AI by JacyL4 2017 ~ 2025</span>
           </div>
         </div>
       </footer>

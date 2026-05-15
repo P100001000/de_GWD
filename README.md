@@ -1,11 +1,11 @@
-# 寒月
-* 具备流量整形加速的旁路网关
+# GWD AI
+* 具备流量整形加速的旁路网关，AI 驱动智能维护
 * 仅供学习与研究，不支持机场的双端自建方案
 
 * 基于性能考量，尽量避免使用虚拟交换
 
-> **注意**：此仓库是 [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) 的社区维护分支。
-> 原项目已于 2025年10月归档，本分支将继续跟进组件更新、分流规则更新及 Debian 新版本适配。
+> **注意**：此仓库是 [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) 的社区维护分支，借助 AI 进行智能维护与持续更新。
+> 原项目已于 2025年10月归档，本分支通过 AI 辅助跟进组件更新、分流规则更新及 Debian 新版本适配。
 
 [![Telegram](https://cdn.jsdelivr.net/gh/Patrolavia/telegram-badge@8fe3382b3fd3a1c533ba270e608035a27e430c2e/chat.svg)](https://t.me/de_GWD_DQ)  
 
