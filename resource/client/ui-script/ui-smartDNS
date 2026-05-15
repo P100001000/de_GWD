@@ -18,7 +18,7 @@ DoG=$(jq -r '.dns.dog' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$')
 touch /opt/de_GWD/coredns/corefile
 if [[ -n $DoG ]]; then
 DoGcDomain=$(echo $DoG | cut -d: -f1)
-DoGcIP=$(dig @127.0.0.1 $DoGcDomain -4p 5331 +short  | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+DoGcIP=$(dig @127.0.0.1 $DoGcDomain -4p 5331 +short  | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | head -n1)
 DoGcPort=$(echo $DoG | cut -d: -f2 | grep '^[[:digit:]]*$')
 fi
 
@@ -58,7 +58,7 @@ fi
 
 if [[ -n $doh1 ]]; then
 doh1Domain=$(echo $doh1 | cut -d/ -f1 | cut -d: -f1)
-doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short  | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short  | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | head -n1)
 doh1Port=$(echo $doh1 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
 doh1Path=$(echo $doh1 | cut -d/ -f2)
 
@@ -71,7 +71,7 @@ fi
 
 if [[ -n $doh2 ]]; then
 doh2Domain=$(echo $doh2 | cut -d/ -f1 | cut -d: -f1)
-doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short  | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short  | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | head -n1)
 doh2Port=$(echo $doh2 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
 doh2Path=$(echo $doh2 | cut -d/ -f2)
 
@@ -84,8 +84,6 @@ fi
 
 cat << EOF >/opt/de_GWD/smartdns/smartdns.conf
 server-name smartdns
-
-bind :53
 
 bind 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
 bind-tcp 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn

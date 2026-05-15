@@ -48,13 +48,13 @@ EOF
 
 if [[ -n $doh1IP ]]; then
 doh1Domain=$(echo $doh1 | cut -d/ -f1 | cut -d: -f1)
-doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short  | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short  | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | head -n1)
 yq eval -i ".plugins.[0].args.entries += [\"$doh1Domain $doh1IP\"]" /opt/de_GWD/mosdns/hosts.yaml
 fi
 
 if [[ -n $doh2IP ]]; then
 doh2Domain=$(echo $doh2 | cut -d/ -f1 | cut -d: -f1)
-doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short  | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short  | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | head -n1)
 yq eval -i ".plugins.[0].args.entries += [\"$doh2Domain $doh2IP\"]" /opt/de_GWD/mosdns/hosts.yaml
 fi
 
@@ -156,12 +156,12 @@ plugins:
   - type: udp_server
     args:
       entry: main_sequence
-      listen: 127.0.0.1:5341
+      listen: 0.0.0.0:53
 
   - type: tcp_server
     args:
       entry: main_sequence
-      listen: 127.0.0.1:5341
+      listen: 0.0.0.0:53
 EOF
 
 doh1re_origin=$(jq -r '.dns.doh1re' /opt/de_GWD/0conf)
