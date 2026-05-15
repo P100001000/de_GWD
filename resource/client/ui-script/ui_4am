@@ -14,10 +14,12 @@ set -euo pipefail
 STAGING="/tmp/de_GWD_update"
 STATUS_FILE="/opt/de_GWD/.update_status"
 FAIL_COUNT_FILE="/opt/de_GWD/.update_fail_count"
+ETAG_DIR="/opt/de_GWD/.repo/.etags"
+LAST_GOOD_DIR="/opt/de_GWD/.repo/prev"
 failed_items=""
 
 rm -rf "$STAGING"
-mkdir -p "$STAGING"
+mkdir -p "$STAGING" "$ETAG_DIR" "$LAST_GOOD_DIR"
 
 # ── Data source registry:  name|primary_url|mirror_url|sha256_url|repo_path|min_size|min_lines ──
 declare -A SRC_PRIMARY SRC_MIRROR SRC_SHA SRC_REPO SRC_MINSIZE SRC_MINLINES
@@ -87,13 +89,34 @@ checkSum(){
 
 hash_name(){ echo "$1" | sha256sum | awk '{print $1}'; }
 
-# download_with_fallback: tries primary URL, falls back to mirror
-# $1 = primary URL, $2 = mirror URL, $3 = destination path
+# download_with_fallback: tries primary URL with ETag, falls back to mirror
+# $1 = primary URL, $2 = mirror URL, $3 = destination path, $4 = source name (for ETag storage)
 download_with_fallback(){
-	local url="$1" mirror="$2" dest="$3"
+	local url="$1" mirror="$2" dest="$3" name="$4"
+	local etag_file="$ETAG_DIR/$name.etag"
+	local http_code
+
+	# Try primary with ETag conditional request
+	if [[ -f "$etag_file" ]]; then
+		http_code=$(curl -fsSLo "$dest" -m 30 -H "If-None-Match: $(cat "$etag_file")" -w "%{http_code}" "$url" 2>/dev/null)
+		if [[ $http_code = "304" ]]; then
+			return 0  # Not modified, no download needed
+		elif [[ $http_code = "200" ]]; then
+			# Save new ETag
+			curl -fsSLI -m 10 "$url" 2>/dev/null | grep -i '^etag:' | awk '{print $2}' | tr -d '\r"' > "$etag_file"
+			return 0
+		fi
+		# Other status codes: fall through to full download
+	fi
+
+	# Full download (no ETag or conditional request failed)
 	if curl -fsSLo "$dest" -m 30 "$url"; then
+		# Store ETag for next run
+		curl -fsSLI -m 10 "$url" 2>/dev/null | grep -i '^etag:' | awk '{print $2}' | tr -d '\r"' > "$etag_file"
 		return 0
 	fi
+
+	# Try mirror
 	echo -e "  ${YELLOW}Primary failed, trying mirror...${cRES}" >&2
 	if curl -fsSLo "$dest" -m 30 "$mirror"; then
 		return 0
@@ -143,7 +166,7 @@ serverConnect1=$(curl -Is -m 5 google.com | grep 'HTTP' || true)
 serverConnect2=$(curl -Is -m 5 youtube.com | grep 'HTTP' || true)
 [[ -z $serverConnect1 ]] && [[ -z $serverConnect2 ]] && { echo "No internet connection, skipping update."; echo "$(date +%s)|SKIP|no_internet" > "$STATUS_FILE"; exit 0; }
 
-[[ $1 = "u" ]] && service cron stop
+[[ ${1:-} = "u" ]] && service cron stop
 
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules${cRES}\r\c"
 
@@ -163,6 +186,9 @@ for name in "${SOURCE_NAMES[@]}"; do
 		continue
 	fi
 
+	# Backup current file before any changes (last-good fallback)
+	[[ -f "${SRC_REPO[$name]}" ]] && cp -f "${SRC_REPO[$name]}" "$LAST_GOOD_DIR/$(basename "${SRC_REPO[$name]}")"
+
 	# Check if local file already matches
 	if [[ $(checkSum "${SRC_REPO[$name]}" "${sha_sums[$name]}") = "true" ]]; then
 		# Copy existing file to staging (no download needed)
@@ -172,7 +198,11 @@ for name in "${SOURCE_NAMES[@]}"; do
 
 	# Download to staging
 	staging_path="$STAGING/$(basename "${SRC_REPO[$name]}")"
-	if download_with_fallback "${SRC_PRIMARY[$name]}" "${SRC_MIRROR[$name]}" "$staging_path"; then
+	if download_with_fallback "${SRC_PRIMARY[$name]}" "${SRC_MIRROR[$name]}" "$staging_path" "$name"; then
+		# ETag 304: staging file is empty, reuse existing repo file
+		if [[ ! -s "$staging_path" ]] && [[ -f "${SRC_REPO[$name]}" ]]; then
+			cp -f "${SRC_REPO[$name]}" "$staging_path"
+		fi
 		# Verify SHA
 		if [[ $(checkSum "$staging_path" "${sha_sums[$name]}") != "true" ]]; then
 			echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}${name}${RED} SHA mismatch${cRES}"
@@ -278,13 +308,21 @@ EOF
 	echo "$(date +%s)|PARTIAL|${failed_items%,}" > "$STATUS_FILE"
 
 	# Track consecutive failures for items that fully failed download
-	local fail_count
-	fail_count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)
-	fail_count=$((fail_count + 1))
-	echo "$fail_count" > "$FAIL_COUNT_FILE"
-	if [[ $fail_count -ge 3 ]]; then
-		touch "/opt/de_GWD/.update_fail_flag"
-	fi
+		local fail_count
+		fail_count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)
+		fail_count=$((fail_count + 1))
+		echo "$fail_count" > "$FAIL_COUNT_FILE"
+		if [[ $fail_count -ge 3 ]]; then
+			touch "/opt/de_GWD/.update_fail_flag"
+			# Circuit breaker: restore from last-good backup for failed items
+			for name in "${SOURCE_NAMES[@]}"; do
+				local_fname=$(basename "${SRC_REPO[$name]}")
+				if [[ ! -f "${SRC_REPO[$name]}" ]] && [[ -f "$LAST_GOOD_DIR/$local_fname" ]]; then
+					cp -f "$LAST_GOOD_DIR/$local_fname" "${SRC_REPO[$name]}"
+					echo -e "  ${YELLOW}Restored ${name} from last-good backup${cRES}" >&2
+				fi
+			done
+		fi
 else
 	echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules ${RED}(all failed)${cRES}"
 	echo "$(date +%s)|FAIL|${failed_items%,}" > "$STATUS_FILE"
@@ -294,6 +332,14 @@ else
 	echo "$fail_count" > "$FAIL_COUNT_FILE"
 	if [[ $fail_count -ge 3 ]]; then
 		touch "/opt/de_GWD/.update_fail_flag"
+		# Circuit breaker: restore all from last-good backup
+		for name in "${SOURCE_NAMES[@]}"; do
+			local_fname=$(basename "${SRC_REPO[$name]}")
+			if [[ -f "$LAST_GOOD_DIR/$local_fname" ]]; then
+				cp -f "$LAST_GOOD_DIR/$local_fname" "${SRC_REPO[$name]}"
+			fi
+		done
+		echo -e "  ${YELLOW}Circuit breaker: restored all rules from last-good backup${cRES}" >&2
 	fi
 fi
 
@@ -310,7 +356,7 @@ if [[ -n $(openssl x509 -enddate -noout -in /var/www/ssl/de_GWD.cer -checkend 25
 	}
 fi
 
-[[ $1 = "u" ]] && service cron restart
+[[ ${1:-} = "u" ]] && service cron restart
 
 # Clean up staging
 rm -rf "$STAGING"
