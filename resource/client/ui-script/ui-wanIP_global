@@ -6,7 +6,7 @@ publicIPurls+=(http://ip.sb)
 publicIPurls+=(http://icanhazip.com)
 
 for (( i=0; i<10; ++i)); do
-	wanIP=$(curl -4sSLm 2 ${publicIPurls[$RANDOM % ${#publicIPurls[@]}]} 2>/dev/null | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | xargs -n1 | awk NR==1 | grep -v '127.0.0.1')
+	wanIP=$(curl -4sSLm 2 ${publicIPurls[$RANDOM % ${#publicIPurls[@]}]} 2>/dev/null | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -n1 | grep -v '127.0.0.1')
 	[[ -n $wanIP ]] && break
 	sleep 1
 done

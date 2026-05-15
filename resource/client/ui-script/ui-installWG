@@ -11,15 +11,15 @@ cRES='\E[0m'
 
 installWGcore(){
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Install Wireguard${cRES}\r\c"
-uname -r 2>&1 | grep -o '[0-9.]*' | head -n 1 >/tmp/kernelVer
+uname -r | grep -o '[0-9.]*' | head -n 1 >/tmp/kernelVer
 echo "5.6" >>/tmp/kernelVer
 
-if [[ $(cat /tmp/kernelVer | sort -rV | head -n 1) = "5.6" ]]; then
+if [[ $(sort -rV /tmp/kernelVer | head -n 1) = "5.6" ]]; then
     echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Update kernel first ! ${cRES}"
 else
-    unset aptPKG
-    [[ -z $(dpkg -l 2>/dev/null | awk '{print$2}' | grep '^wireguard-tools$') ]] && aptPKG+=(wireguard-tools)
-    [[ -n $aptPKG ]] && apt update && DEBIAN_FRONTEND=noninteractive apt install -y $(echo ${aptPKG[@]})
+    if ! dpkg -s wireguard-tools >/dev/null 2>&1; then
+        apt update && DEBIAN_FRONTEND=noninteractive apt install -y wireguard-tools
+    fi
 
     if [[ -z $(jq -r '.wireguard.server.sprivatekey' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') ]]; then
         /opt/de_GWD/ui-WGgenSkey

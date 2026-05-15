@@ -6,8 +6,8 @@ publicIPurls+=(http://myip.ipip.net)
 
 for (( i=0; i<10; ++i)); do
 	wanIP=$(curl -fsLm 2 ${publicIPurls[$RANDOM % ${#publicIPurls[@]}]} 2>/dev/null)
-	[[ -n $(echo $wanIP | grep '移动') ]] && wanIP=""
-	wanIP=$(echo $wanIP | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | xargs -n1 | head -n1)
+	[[ $wanIP == *移动* ]] && wanIP=""
+	wanIP=$(echo $wanIP | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -n1)
 	[[ -n $wanIP ]] && [[ -z $(nft get element ip de_GWD CHNROUTE { $wanIP } 2>&1 | grep 'Error:') ]] && break
 	wanIP=""
 	sleep 1

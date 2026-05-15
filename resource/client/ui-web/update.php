@@ -37,7 +37,7 @@
 <?php $checkBitwarden = $de_GWDconf->app->bitwarden ?? ''; ?>
 
 <?php $FileRunWebConf = @file_get_contents('/etc/nginx/conf.d/filerun.conf'); preg_match_all('/(?<=\blisten )\S+/is', (string)$FileRunWebConf, $FileRunPort); $FileRunPort = $FileRunPort[0][0] ?? '' ?>
-<?php $WebConf = file_get_contents ('/etc/nginx/conf.d/default.conf'); preg_match_all('/(?<=\bserver_name )\S+/is', $WebConf, $serverName); $serverName = rtrim($serverName[0][0],";") ?>
+<?php $WebConf = @file_get_contents('/etc/nginx/conf.d/default.conf'); preg_match_all('/(?<=\bserver_name )\S+/is', (string)$WebConf, $serverName); $serverName = rtrim($serverName[0][0] ?? '', ";") ?>
 
 <?php $checkAutoUpdateHour = $de_GWDconf->address->autoUpdateHour ?? 'off'; ?>
 <?php $checkAutoUpdateStatus = file_exists('/opt/de_GWD/autoUpdate'); ?>
