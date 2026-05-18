@@ -2876,6 +2876,8 @@ fi
 
 if [[ $(systemctl is-active pihole-FTL 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} Pi-hole        \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
+elif [[ $(docker inspect -f '{{.State.Running}}' pihole 2>/dev/null) = "true" ]]; then
+  echo -e "${WHITE} Pi-hole        \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/usr/local/bin/pihole" ]]; then
   echo -e "${WHITE} Pi-hole        \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
 else
