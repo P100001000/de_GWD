@@ -516,9 +516,9 @@ try_connect() {
     return 1
 }
 
-# Execute connections
-serverConnect1=$(try_connect "google.com")
-serverConnect2=$(try_connect "1.1.1.1")
+# Execute connections (use China-accessible endpoints)
+serverConnect1=$(try_connect "aliyun.com")
+serverConnect2=$(try_connect "baidu.com")
 
 if [[ ${1:-} = "u" ]]; then
     if [[ ${2:-} = "a" ]]; then
@@ -2752,7 +2752,7 @@ nginxSet
 
 installWebUI
 
-pullpihole
+installPihole
 
 installPihole
 
@@ -2804,7 +2804,7 @@ installXray
 
 installNftables
 
-pullpihole
+installPihole
 
 installPihole
 
@@ -2840,7 +2840,7 @@ nginxSet
 
 installWebUI
 
-pullpihole
+installPihole
 
 installPihole
 
