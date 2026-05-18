@@ -1,0 +1,38 @@
+#!/bin/bash
+# Canary domain verification for Domains.chn.txt
+# Ensures well-known Chinese domains are present after each update.
+# Called by ui_4am after successful/partial domain list sync.
+
+CANARY_DOMAINS=(
+    baidu.com taobao.com tmall.com jd.com qq.com
+    weibo.com zhihu.com bilibili.com douyin.com
+    163.com sina.com.cn sohu.com 360.cn mi.com
+    meituan.com alipay.com csdn.net
+)
+
+CHNFILE="/opt/de_GWD/.repo/Domains.chn.txt"
+STATUS_FILE="/opt/de_GWD/.update_status"
+ALERT_FILE="/opt/de_GWD/.update_canary_alert"
+
+[[ ! -f "$CHNFILE" ]] && { echo "Domains.chn.txt not found, skipping canary check"; exit 0; }
+
+MISSING=()
+for domain in "${CANARY_DOMAINS[@]}"; do
+    if ! grep -q "^${domain}$" "$CHNFILE"; then
+        MISSING+=("$domain")
+    fi
+done
+
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    echo "[ALERT] $(date '+%Y-%m-%d %H:%M:%S') Missing canary domains: ${MISSING[*]}" >&2
+    echo "$(date +%s)|CANARY_FAIL|missing:${MISSING[*]}" >> "$STATUS_FILE"
+    touch "$ALERT_FILE"
+    echo "[FIX]  Run: for d in ${MISSING[*]}; do echo \$d >> /opt/de_GWD/.repo/Domains.chn.txt.local; done"
+    exit 1
+fi
+
+# Clear alert if all domains present (auto-recovery)
+rm -f "$ALERT_FILE"
+
+echo "[OK] $(date '+%H:%M:%S') All ${#CANARY_DOMAINS[@]} canary domains present"
+exit 0

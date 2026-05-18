@@ -16,3 +16,15 @@ cRES='\E[0m'
 
 [[ $1 = "r" ]] && systemctl restart smartdns && systemctl restart mosdns
 [[ $1 = "n" ]] && systemctl restart nftables
+
+# ── Auto DNS split verification (every 4h, silent unless failures) ──
+UI_CHECK="/opt/de_GWD/ui-checkDNSsplit"
+if [[ -x "$UI_CHECK" ]]; then
+    FAIL_COUNT=$($UI_CHECK --auto 2>/dev/null | tail -1 | grep -oE '[0-9]+' | tail -1 || echo 0)
+    if [[ ${FAIL_COUNT:-0} -gt 2 ]]; then
+        echo "$(date +%s)|SPLIT_FAIL|${FAIL_COUNT} domains routing wrong" >> /opt/de_GWD/.update_status
+        touch /opt/de_GWD/.update_split_alert
+    else
+        rm -f /opt/de_GWD/.update_split_alert
+    fi
+fi

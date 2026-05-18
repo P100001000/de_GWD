@@ -168,6 +168,16 @@ serverConnect2=$(curl -Is -m 5 youtube.com | grep 'HTTP' || true)
 
 [[ ${1:-} = "u" ]] && service cron stop
 
+# ── Force-refresh: periodically ignore ETag for critical files ──────
+FORCE_REFRESH_INTERVAL=$(( 3 * 86400 ))  # 3 days
+for critical in DomainsChn IPchnroute; do
+    last_full=$(cat "$ETAG_DIR/${critical}.last_full" 2>/dev/null || echo 0)
+    if (( $(date +%s) - last_full > FORCE_REFRESH_INTERVAL )); then
+        rm -f "$ETAG_DIR/${critical}.etag"
+        date +%s > "$ETAG_DIR/${critical}.last_full"
+    fi
+done
+
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Update CHN Domain & IP rules${cRES}\r\c"
 
 # ── Phase 1: Fetch all SHA sums and download to staging ──────────
@@ -235,6 +245,12 @@ if [[ $all_ok = "true" ]]; then
 		[[ -f "$STAGING/$local_fname" ]] && mv -f "$STAGING/$local_fname" "${SRC_REPO[$name]}"
 	done
 
+	# Merge local domain supplement (survives upstream overwrites)
+	if [[ -f "/opt/de_GWD/.repo/Domains.chn.txt.local" ]] && [[ -s "/opt/de_GWD/.repo/Domains.chn.txt.local" ]]; then
+		cat /opt/de_GWD/.repo/Domains.chn.txt.local >> "${SRC_REPO[DomainsChn]}"
+		sort -u "${SRC_REPO[DomainsChn]}" -o "${SRC_REPO[DomainsChn]}"
+	fi
+
 	# Apply rules
 	if [[ $(checkSum "/opt/de_GWD/.repo/99-bogus-nxdomain.china.conf" "${sha_sums[bogusNxdomain]}") = "true" ]]; then
 		cp -f /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf /etc/dnsmasq.d/
@@ -278,6 +294,12 @@ elif [[ $all_ok = "partial" ]]; then
 		local_fname=$(basename "${SRC_REPO[$name]}")
 		[[ -f "$STAGING/$local_fname" ]] && mv -f "$STAGING/$local_fname" "${SRC_REPO[$name]}"
 	done
+
+	# Merge local domain supplement (survives upstream overwrites)
+	if [[ -f "/opt/de_GWD/.repo/Domains.chn.txt.local" ]] && [[ -s "/opt/de_GWD/.repo/Domains.chn.txt.local" ]]; then
+		cat /opt/de_GWD/.repo/Domains.chn.txt.local >> "${SRC_REPO[DomainsChn]}"
+		sort -u "${SRC_REPO[DomainsChn]}" -o "${SRC_REPO[DomainsChn]}"
+	fi
 
 	# Apply what we have
 	[[ -f "/opt/de_GWD/.repo/99-bogus-nxdomain.china.conf" ]] && cp -f /opt/de_GWD/.repo/99-bogus-nxdomain.china.conf /etc/dnsmasq.d/ || true
@@ -341,6 +363,11 @@ else
 		done
 		echo -e "  ${YELLOW}Circuit breaker: restored all rules from last-good backup${cRES}" >&2
 	fi
+fi
+
+# ── Canary verification: check known domestic domains ──────────────
+if [[ -x "/opt/de_GWD/ui-verifyChnlist" ]]; then
+    /opt/de_GWD/ui-verifyChnlist || true
 fi
 
 # ── SSL certificate renewal ──────────────────────────────────────

@@ -1,4 +1,8 @@
 #!/bin/bash
+# DNS split verification — test random Chinese domains for correct routing
+# Usage: ui-checkDNSsplit          → interactive, random 10 domains
+#        ui-checkDNSsplit --auto   → non-interactive, all domains, exit code = fail count
+
 DOMAINS=(
 baidu.com taobao.com tmall.com jd.com qq.com weibo.com zhihu.com
 bilibili.com toutiao.com douyin.com kuaishou.com meituan.com
@@ -9,17 +13,42 @@ pinduoduo.com vip.com suning.com dangdang.com xiaohongshu.com
 huya.com douyu.com smzdm.com autohome.com.cn 58.com lianjia.com
 )
 
-shuf -n 10 --random-source=/dev/urandom <(printf '%s\n' "${DOMAINS[@]}") | while read domain; do
+AUTO_MODE=false
+[[ "${1:-}" = "--auto" ]] && AUTO_MODE=true
+
+FAIL_COUNT=0
+TOTAL=0
+
+if $AUTO_MODE; then
+    # Auto mode: test all domains
+    TEST_LIST=$(printf '%s\n' "${DOMAINS[@]}")
+else
+    # Interactive mode: random 10
+    TEST_LIST=$(shuf -n 10 --random-source=/dev/urandom <(printf '%s\n' "${DOMAINS[@]}"))
+fi
+
+while read domain; do
+    [[ -z "$domain" ]] && continue
+    TOTAL=$((TOTAL + 1))
     dig_out=$(dig +short "$domain" @127.0.0.1 2>/dev/null)
     result=$(echo "$dig_out" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
     cname=$(echo "$dig_out" | head -1)
     if [[ -z "$result" ]]; then
         echo "[FAIL] $domain → 无解析"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
     elif nft get element ip de_GWD CHNROUTE { $result } 2>&1 | grep -q Error; then
         echo "[FAIL] $domain → $result (国外IP/走代理)"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
     elif echo "$cname" | grep -qE 'queniuk|queniuu|queniuy' 2>/dev/null; then
         echo "[WARN] $domain → $result (CNAME 被篡改但IP属国内)"
     else
         echo "[OK]   $domain → $result"
     fi
-done
+done <<< "$TEST_LIST"
+
+if $AUTO_MODE; then
+    echo "---"
+    echo "Total: $TOTAL, Fail: $FAIL_COUNT"
+fi
+
+exit $FAIL_COUNT
