@@ -1027,6 +1027,7 @@ echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}System Config$
 
 installSmartDNS(){
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Proxy Components Prepared${cRES}\r\c"
+docker stop pihole >/dev/null 2>&1
 systemctl stop pihole-FTL >/dev/null 2>&1
 
 if [[ -n $(unzip -tq /opt/de_GWD/.repo/de_GWD.zip | grep "No errors detected in compressed data") ]]; then
@@ -2341,6 +2342,12 @@ SETUPVARS
 }
 
 installPihole(){
+# Skip if Pi-hole already running (native or Docker)
+if [[ $(systemctl is-active pihole-FTL 2>/dev/null) = "active" ]] || [[ $(docker inspect -f '{{.State.Running}}' pihole 2>/dev/null) = "true" ]]; then
+  echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole already running, skip install${cRES}"
+  return 0
+fi
+
 stop_docker_pihole
 
 # Read password from old Docker Pi-hole location (migration) or existing native install
@@ -2396,9 +2403,13 @@ systemctl daemon-reload >/dev/null
 
 update-rc.d -f dhcpd remove >/dev/null 2>&1
 
+# Detect Pi-hole config path (Docker vs native)
+local pihole_toml="/etc/pihole/pihole.toml"
+[[ -f "/opt/de_GWD/pihole/pihole.toml" ]] && pihole_toml="/opt/de_GWD/pihole/pihole.toml"
+
 python3 <<EOF
 import toml
-with open("/etc/pihole/pihole.toml", "r") as f:
+with open("$pihole_toml", "r") as f:
  data = toml.load(f)
 
 data["dns"]["port"] = 5399
@@ -2422,11 +2433,11 @@ data["dhcp"]["multiDNS"] = True
 data["misc"]["etc_dnsmasq_d"] = True
 data["misc"]["check"]["load"] = False
 
-with open("/etc/pihole/pihole.toml", "w") as f:
+with open("$pihole_toml", "w") as f:
     toml.dump(data, f)
 EOF
 
-chmod -R 777 /etc/pihole
+chmod -R 777 "$(dirname "$pihole_toml")"
 
 cat << EOF >/etc/dnsmasq.d/00-extra.conf
 dns-forward-max=10000
@@ -2460,18 +2471,25 @@ if [[ $(jq -r '.FORWARD.block53' /opt/de_GWD/0conf 2>/dev/null) = "on" ]]; then
 fi
 echo
 
+	local pihole_toml="/etc/pihole/pihole.toml"
+	[[ -f "/opt/de_GWD/pihole/pihole.toml" ]] && pihole_toml="/opt/de_GWD/pihole/pihole.toml"
+
 	python3 <<EOF
 import toml
-with open("/etc/pihole/pihole.toml", "r") as f:
+with open("$pihole_toml", "r") as f:
  data = toml.load(f)
 
 data["dns"]["port"] = 53
 
-with open("/etc/pihole/pihole.toml", "w") as f:
+with open("$pihole_toml", "w") as f:
     toml.dump(data, f)
 EOF
 
-	systemctl restart pihole-FTL >/dev/null 2>&1
+	if [[ -f "/opt/de_GWD/pihole/pihole.toml" ]]; then
+		docker restart pihole >/dev/null 2>&1
+	else
+		systemctl restart pihole-FTL >/dev/null 2>&1
+	fi
 
 if [[ -n $(jq -r '.address.alias' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') ]]; then
   /opt/de_GWD/ui-markThis >/dev/null 2>&1
@@ -2564,12 +2582,20 @@ bash <(wget --show-progress -cqO- https://raw.githubusercontent.com/P100001000/d
 
 
 clearPihole(){
-rm -rf /etc/pihole/listsCache/*
->/etc/pihole/adlists.list
-sqlite3 /etc/pihole/gravity.db "DELETE FROM adlist" 2>/dev/null || true
-pihole -g
-pihole --regex -d ".*;querytype=HTTPS"
-systemctl restart pihole-FTL
+local pi_base="/etc/pihole"
+local pi_cmd="pihole"
+local pi_restart="systemctl restart pihole-FTL"
+if [[ -d "/opt/de_GWD/pihole" ]]; then
+  pi_base="/opt/de_GWD/pihole"
+  pi_cmd="docker exec pihole pihole"
+  pi_restart="docker restart pihole"
+fi
+rm -rf "$pi_base/listsCache/"*
+>"$pi_base/adlists.list"
+sqlite3 "$pi_base/gravity.db" "DELETE FROM adlist" 2>/dev/null || true
+$pi_cmd -g
+$pi_cmd --regex -d ".*;querytype=HTTPS"
+$pi_restart
 }
 
 
@@ -2606,7 +2632,11 @@ changePWD(){
     echo -e "${GREEN}=========================== ${cRES}"
     read newPW
 
-pihole -a -p "$newPW"
+if [[ -d "/opt/de_GWD/pihole" ]]; then
+  docker exec pihole pihole -a -p "$newPW"
+else
+  pihole -a -p "$newPW"
+fi
 
 piholePW=$(php -r "echo hash('sha256', hash('sha256', '$newPW'));")
 jq --arg piholePW "$piholePW" '.address.PWD = $piholePW' /opt/de_GWD/0conf | sponge /opt/de_GWD/0conf
