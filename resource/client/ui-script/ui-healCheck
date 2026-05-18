@@ -1,0 +1,54 @@
+#!/bin/bash
+# Self-healing invariants: fix known regressions from update overwrites.
+# Invoked at end of ui_4h. /.custom/ dir is never touched by any update.
+
+FIXED=0
+
+# 1. SmartDNS must NOT bind port 53
+if grep -q '^bind :53' /opt/de_GWD/smartdns/smartdns.conf 2>/dev/null; then
+    sed -i '/^bind :53/d' /opt/de_GWD/smartdns/smartdns.conf
+    systemctl restart smartdns 2>/dev/null
+    ((FIXED++))
+    echo "[HEAL] Removed SmartDNS port 53 binding"
+fi
+
+# 2. Pi-hole must own port 53
+if ! ss -tulnp 2>/dev/null | grep ':53 ' | grep -q 'pihole'; then
+    docker restart pihole 2>/dev/null || systemctl restart pihole-FTL 2>/dev/null
+    sleep 2
+    ((FIXED++))
+    echo "[HEAL] Restarted Pi-hole to reclaim port 53"
+fi
+
+# 3. mosdns config.yaml must exist
+if [[ ! -f "/opt/de_GWD/mosdns/config.yaml" ]]; then
+    /opt/de_GWD/.custom/ui-DNSsplit 2>/dev/null
+    ((FIXED++))
+    echo "[HEAL] Regenerated mosdns config.yaml"
+fi
+
+# 4. nftables CHNROUTE must have elements
+CHN_COUNT=$(nft list set ip de_GWD CHNROUTE 2>/dev/null | grep -c ',' || echo 0)
+if [[ ${CHN_COUNT:-0} -lt 1000 ]]; then
+    cp /opt/de_GWD/.repo/IPchnroute /opt/de_GWD/nftables/IP_CHNROUTE 2>/dev/null
+    sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE 2>/dev/null
+    sed -i 's/$/,/' /opt/de_GWD/nftables/IP_CHNROUTE 2>/dev/null
+    /opt/de_GWD/.custom/ui_4am 2>/dev/null
+    ((FIXED++))
+    echo "[HEAL] Reloaded CHNROUTE (had $CHN_COUNT elements)"
+fi
+
+# 5. vtrui needs geoip.dat/geosite.dat
+if [[ ! -f "/opt/de_GWD/vtrui/geoip.dat" ]] || [[ ! -f "/opt/de_GWD/vtrui/geosite.dat" ]]; then
+    cp /opt/de_GWD/.repo/geoip.dat /opt/de_GWD/vtrui/geoip.dat 2>/dev/null
+    cp /opt/de_GWD/.repo/geosite.dat /opt/de_GWD/vtrui/geosite.dat 2>/dev/null
+    systemctl restart vtrui 2>/dev/null
+    ((FIXED++))
+    echo "[HEAL] Restored vtrui geoip/geosite.dat"
+fi
+
+if [[ $FIXED -gt 0 ]]; then
+    echo "$(date +%s)|HEALED|$FIXED issues auto-fixed" >> /opt/de_GWD/.update_status
+fi
+
+exit 0
