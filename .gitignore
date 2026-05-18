@@ -1,2 +1,6 @@
 
 .DS_Store
+client.bak2
+*.bak
+*.swp
+*~
