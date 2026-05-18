@@ -162,9 +162,9 @@ health_check(){
 
 /opt/de_GWD/tcpTime
 
-serverConnect1=$(curl -Is -m 5 google.com | grep 'HTTP' || true)
-serverConnect2=$(curl -Is -m 5 youtube.com | grep 'HTTP' || true)
-[[ -z $serverConnect1 ]] && [[ -z $serverConnect2 ]] && { echo "No internet connection, skipping update."; echo "$(date +%s)|SKIP|no_internet" > "$STATUS_FILE"; exit 0; }
+serverConnect1=$(curl -Is -m 5 aliyun.com | grep 'HTTP' || true)
+serverConnect2=$(curl -Is -m 5 baidu.com | grep 'HTTP' || true)
+[[ -z $serverConnect1 ]] && [[ -z $serverConnect2 ]] && { echo "No internet connection, skipping update."; echo "$(date +%s)|SKIP|no_internet" > "$STATUS_FILE"; rm -f "$FAIL_COUNT_FILE"; exit 0; }
 
 [[ ${1:-} = "u" ]] && service cron stop
 
