@@ -129,7 +129,7 @@ echo "server-https https://$doh2Str -host-name $doh2Domain -no-check-certificate
 fi
 
 if [[ -n $DoGcIP ]]; then
-echo "server-tcp 127.0.0.1:5333 -group DNS_global" >>/opt/de_GWD/smartdns/smartdns.conf
+echo "server-tcp 127.0.0.1:5333" >>/opt/de_GWD/smartdns/smartdns.conf
 fi
 
 doh1re_origin=$(jq -r '.dns.doh1re' /opt/de_GWD/0conf)
