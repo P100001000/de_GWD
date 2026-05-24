@@ -2416,14 +2416,18 @@ update-rc.d -f dhcpd remove >/dev/null 2>&1
 
 # Detect Pi-hole config path (Docker vs native)
 local pihole_toml="/etc/pihole/pihole.toml"
-[[ -f "/opt/de_GWD/pihole/pihole.toml" ]] && pihole_toml="/opt/de_GWD/pihole/pihole.toml"
+local is_docker=false
+if [[ -f "/opt/de_GWD/pihole/pihole.toml" ]] && [[ $(docker inspect -f '{{.State.Running}}' pihole 2>/dev/null) = "true" ]]; then
+  pihole_toml="/opt/de_GWD/pihole/pihole.toml"
+  is_docker=true
+fi
 
 python3 <<EOF
 import toml
 with open("$pihole_toml", "r") as f:
  data = toml.load(f)
 
-data["dns"]["port"] = 53
+data["dns"]["port"] = $([[ "$is_docker" = "true" ]] && echo "5399" || echo "53")
 data["dns"]["upstreams"] = ["127.0.0.1#5341","127.0.0.1#5341"]
 data["dns"]["listeningMode"] = "ALL"
 data["dns"]["EDNS0ECS"] = True
