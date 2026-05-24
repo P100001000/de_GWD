@@ -3059,4 +3059,12 @@ read -p "Select:" num
     esac
 }
 
+# --postinstall-only: skip full install, just run post-install (cron, rules, reload)
+if [[ ${1:-} = "--postinstall-only" ]]; then
+	echo -e "${WHITE}[...]\tPost-install only mode${cRES}"
+	postInstall
+	echo -e "${WHITE}[ ✓ ]\tPost-install complete${cRES}"
+	exit 0
+fi
+
 start_menu

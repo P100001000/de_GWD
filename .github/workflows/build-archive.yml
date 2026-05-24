@@ -1,0 +1,35 @@
+name: Build Archive.zip
+
+on:
+  push:
+    paths:
+      - 'resource/client/ui-script/**'
+      - 'resource/client/ui-web/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Archive.zip
+        run: |
+          cd resource/client
+          rm -f Archive.zip
+          zip -r Archive.zip ui-script/ ui-web/
+          sha256sum Archive.zip | awk '{print $1}' > Archive.zip.sha256sum
+          echo "Archive.zip size: $(wc -c < Archive.zip) bytes"
+          echo "SHA256: $(cat Archive.zip.sha256sum)"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'ci: rebuild Archive.zip (ui-script/ui-web changed)'
+          title: 'ci: Archive.zip auto-rebuild'
+          body: |
+            Auto-rebuilt `Archive.zip` because `resource/client/ui-script/` or `resource/client/ui-web/` changed.
+
+            - Archive.zip SHA256: `${{ steps.build.outputs.sha256 }}`
+          branch: ci/archive-rebuild
+          delete-branch: true
