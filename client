@@ -190,9 +190,15 @@ fi
 cat << "EOF" >/opt/de_GWD/tcpTime
 #!/bin/bash
 echo
-date -s "$(curl -sI aliyun.com| grep -i '^date:'|cut -d' ' -f2-)"
-[[ $? -ne "0" ]] && date -s "$(wget -qSO- --max-redirect=0 --dns-timeout=3 baidu.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
-hwclock -w
+date -s "$(curl -sI aliyun.com 2>/dev/null | grep -i '^date:' | cut -d' ' -f2-)"
+if [[ $? -ne 0 ]]; then
+  date -s "$(wget -qSO- --max-redirect=0 --dns-timeout=3 baidu.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
+fi
+if command -v hwclock >/dev/null 2>&1; then
+  hwclock -w
+elif command -v fake-hwclock >/dev/null 2>&1; then
+  fake-hwclock save
+fi
 echo
 EOF
 chmod +x /opt/de_GWD/tcpTime
