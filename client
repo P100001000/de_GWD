@@ -334,7 +334,8 @@ if [[ -f "/etc/systemd/system/iptables-proxy.service" ]] || [[ -f "/lib/systemd/
     rm -rf /opt/de_GWD/iptables-proxy-up
 fi
 
-if [[ -f "/etc/systemd/system/pihole-FTL.service" ]] || [[ -f "/lib/systemd/system/pihole-FTL.service" ]]; then
+# Only clean up Pi-hole if binary is missing (old v5 remnant, not legitimate v6 install)
+if [[ (-f "/etc/systemd/system/pihole-FTL.service" || -f "/lib/systemd/system/pihole-FTL.service") && ! -x "/usr/bin/pihole-FTL" ]]; then
     systemctl disable pihole-FTL >/dev/null 2>&1
     systemctl stop pihole-FTL >/dev/null 2>&1
     rm -rf /etc/systemd/system/pihole-FTL.service >/dev/null 2>&1
@@ -2373,8 +2374,8 @@ else
 piholePW='$BALLOON-SHA256$v=1$s=1024,t=32$LwoqshC8cGQ60io+j+h3yQ==$/zfv150BWOgSihODqM1TDSJYydjRp4lH2mf9AOB3oe0='
 fi
 
-# Clean up old Docker Pi-hole volumes
-rm -rf "/etc/dnsmasq.d"
+# Clean up old Docker Pi-hole volumes (only if native Pi-hole not already configured)
+[[ ! -f "/etc/pihole/pihole.toml" ]] && rm -rf "/etc/dnsmasq.d"
 mkdir -p "/etc/dnsmasq.d"
 
 setup_pihole_native "$piholePW"
