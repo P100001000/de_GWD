@@ -20,7 +20,7 @@ phpVer=""
 phpVer=""
 
 
-set -uo pipefail
+set -o pipefail
 trap 'rm -f /tmp/de_GWD_* 2>/dev/null' ERR EXIT
 
 installCMD=`cat << EOF
@@ -455,7 +455,7 @@ doh1=$(jq -r '.dns.doh[]' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$' | awk
 doh2=$(jq -r '.dns.doh[]' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$' | awk NR==2)
 
 [[ -n $doh1 ]] && echo -e "\t${WHITE}DNS over Https 1: \c" && echo -e "${YELLOW}$doh1${cRES}"
-[[ -n $doh2 ]] && echo -e "\t${WHITE}DNS over Https 2: \c" && echo -e "${YELLOW}$doh2${cRES}"
+[[ -n ${doh2:-} ]] && echo -e "\t${WHITE}DNS over Https 2: \c" && echo -e "${YELLOW}$doh2${cRES}"
 [[ -n $DoG ]] && echo -e "\t${WHITE}DNS over gRPC   : \c" && echo -e "${YELLOW}$DoG${cRES}"
 
 
@@ -1219,7 +1219,7 @@ echo -e "${WHITE}Domain: ${YELLOW}$doh1Domain\c" && echo -e "\t${WHITE}IP: ${YEL
 echo
 fi
 
-if [[ -n $doh2 ]]; then
+if [[ -n ${doh2:-} ]]; then
 echo -e "${WHITE}DNS over Https 2: ${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 doh2Domain=$(echo $doh2 | cut -d/ -f1 | cut -d: -f1)
@@ -1474,7 +1474,7 @@ EOF
 rm -rf /etc/nftables*
 rm -rf /opt/de_GWD/nftables
 mkdir -p /opt/de_GWD/nftables
-echo $DoGcIP $doh1IP $doh2IP | xargs -n1 | sort | uniq | sed 's/$/,/g' >/opt/de_GWD/nftables/IP_GlobalDNS
+echo ${DoGcIP:-} ${doh1IP:-} ${doh2IP:-} | xargs -n1 | sort | uniq | sed 's/$/,/g' >/opt/de_GWD/nftables/IP_GlobalDNS
 cat << EOF >/opt/de_GWD/nftables/SET_GlobalDNS.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
