@@ -437,7 +437,7 @@ echo -e "${GREEN}DNS information${cRES}"
 echo
 
 ethernetnum=$(detectWAN)
-gatewayAddr=$(jq -r '.address.upstreamIP' /opt/de_GWD/0conf | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+gatewayAddr=$(jq -r '.address.upstreamIP' /opt/de_GWD/0conf | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 localAddrCIDR=$(jq -r '.address.localIP' /opt/de_GWD/0conf | grep -v '^null$')
 localAddr=$(echo $localAddrCIDR | cut -d / -f1)
 netmask=$(echo $localAddrCIDR | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
@@ -1046,6 +1046,10 @@ mkdir -p /opt/de_GWD/smartdns
 mkdir -p /opt/de_GWD/coredns
 mkdir -p /opt/de_GWD/mosdns
 mkdir -p /opt/de_GWD/vtrui
+	# Preserve geo files across update (they are large, not in de_GWD.zip)
+	for gf in geoip.dat geosite.dat; do
+	  [[ -f "/opt/de_GWD/.repo/$gf" ]] && cp -f "/opt/de_GWD/.repo/$gf" "/opt/de_GWD/vtrui/$gf"
+	done
 
 rm -rf /tmp/de_GWD
 unzip /opt/de_GWD/.repo/de_GWD.zip -d /tmp/de_GWD >/dev/null
@@ -1282,7 +1286,7 @@ echo -e "${WHITE}V2 node: ${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 systemctl stop mosdns
 sleep 5
-domainIP=$(dig @127.0.0.1 $domain -4p 5332 +short | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+domainIP=$(dig @127.0.0.1 $domain -4p 5332 +short | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 echo -e "${WHITE}Domain: ${YELLOW}$domain\c" && echo -e "\t${WHITE}IP: ${YELLOW}$domainIP${cRES}"
 echo
 echo -e "${BLUE}################################################################# ${cRES}"
@@ -1505,7 +1509,7 @@ sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE
 sed -i 's/$/,/g' /opt/de_GWD/nftables/IP_CHNROUTE
 fi
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_CHNROUTE 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_CHNROUTE_elements="elements = { $(cat /opt/de_GWD/nftables/IP_CHNROUTE) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_CHNROUTE 2>&1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}') ]] && IP_CHNROUTE_elements="elements = { $(cat /opt/de_GWD/nftables/IP_CHNROUTE) }"
 cat << EOF >/opt/de_GWD/nftables/SET_CHNROUTE.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1520,7 +1524,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_CHNROUTE.nft
 /opt/de_GWD/nftables/SET_CHNROUTE.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listB 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listB_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listB) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listB 2>&1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}') ]] && IP_listB_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listB) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listB.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1535,7 +1539,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listB.nft
 /opt/de_GWD/nftables/SET_listB.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listW 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listW_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listW) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listW 2>&1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}') ]] && IP_listW_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listW) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listW.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1550,7 +1554,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listW.nft
 /opt/de_GWD/nftables/SET_listW.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listBlan 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listBlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listBlan) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listBlan 2>&1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}') ]] && IP_listBlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listBlan) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listBlan.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1565,7 +1569,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listBlan.nft
 /opt/de_GWD/nftables/SET_listBlan.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listWlan 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listWlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listWlan) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listWlan 2>&1 | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}') ]] && IP_listWlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listWlan) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listWlan.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -2687,7 +2691,7 @@ installGWD(){
 
 ethernetnum=$(detectWAN)
 netmask=$(ip route | grep "$ethernetnum" | awk 'NR==2{print$1}' | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
-localAddr=$(echo $localAddr | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+localAddr=$(echo $localAddr | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 localAddrCIDR=$(echo "$localAddr$netmask")
 localCIDR="$(echo $localAddr | cut -d . -f1-3).0$netmask"
 
