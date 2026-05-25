@@ -83,7 +83,7 @@ done
 
 # ── 4. Sync Pi-hole gravity.db (schema from standard) ──
 echo ""
-echo "[4/5] Syncing Pi-hole gravity.db..."
+echo "[4/6] Syncing Pi-hole gravity.db..."
 GRAVITY_DB="/etc/pihole/gravity.db"
 # 248 uses Docker Pi-hole, extract from container
 ssh "root@${STANDARD}" "docker cp pihole:/etc/pihole/gravity.db /tmp/gravity.db 2>/dev/null && cat /tmp/gravity.db" 2>/dev/null > "${GRAVITY_DB}.new"
@@ -97,9 +97,21 @@ else
     echo "  ✗ gravity.db (skip, may need manual setup)"
 fi
 
-# ── 5. Regenerate rules ──
+# ── 5. Sync all ui-scripts (ensure no missing scripts after manual install) ──
 echo ""
-echo "[5/5] Regenerating rules..."
+echo "[5/6] Syncing all ui-scripts..."
+SCRIPT_COUNT=0
+for s in $(ssh "root@${STANDARD}" "ls /opt/de_GWD/ui-* 2>/dev/null" 2>/dev/null); do
+    f=$(basename "$s")
+    scp -q "root@${STANDARD}:/opt/de_GWD/${f}" "/opt/de_GWD/${f}" 2>/dev/null && ((SCRIPT_COUNT++))
+done
+# Also sync sources.d if it exists
+ssh "root@${STANDARD}" "test -d /opt/de_GWD/sources.d && tar czf - -C /opt/de_GWD sources.d" 2>/dev/null | tar xzf - -C /opt/de_GWD/ 2>/dev/null
+echo "  ✓ $SCRIPT_COUNT scripts synced"
+
+# ── 6. Regenerate rules ──
+echo ""
+echo "[6/6] Regenerating rules..."
 /opt/de_GWD/.custom/ui_4h 2>/dev/null && echo "  ✓ ui_4h completed"
 /opt/de_GWD/.custom/ui_4am 2>/dev/null && echo "  ✓ ui_4am completed"
 
