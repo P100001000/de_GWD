@@ -69,7 +69,7 @@ fi
 
 # ── 3. Sync data files (if newer on standard) ──
 echo ""
-echo "[3/4] Syncing data files..."
+echo "[3/5] Syncing data files..."
 DATA_FILES=(
     "IPchnroute"
     "Domains.chn.txt"
@@ -81,9 +81,25 @@ for f in "${DATA_FILES[@]}"; do
         echo "  ✓ $f" || echo "  ✗ $f"
 done
 
-# ── 4. Regenerate rules ──
+# ── 4. Sync Pi-hole gravity.db (schema from standard) ──
 echo ""
-echo "[4/4] Regenerating rules..."
+echo "[4/5] Syncing Pi-hole gravity.db..."
+GRAVITY_DB="/etc/pihole/gravity.db"
+# 248 uses Docker Pi-hole, extract from container
+ssh "root@${STANDARD}" "docker cp pihole:/etc/pihole/gravity.db /tmp/gravity.db 2>/dev/null && cat /tmp/gravity.db" 2>/dev/null > "${GRAVITY_DB}.new"
+if [[ -s "${GRAVITY_DB}.new" ]]; then
+    mv "${GRAVITY_DB}.new" "$GRAVITY_DB"
+    chown pihole:pihole "$GRAVITY_DB" 2>/dev/null || true
+    systemctl restart pihole-FTL 2>/dev/null || true
+    echo "  ✓ gravity.db synced"
+else
+    rm -f "${GRAVITY_DB}.new"
+    echo "  ✗ gravity.db (skip, may need manual setup)"
+fi
+
+# ── 5. Regenerate rules ──
+echo ""
+echo "[5/5] Regenerating rules..."
 /opt/de_GWD/.custom/ui_4h 2>/dev/null && echo "  ✓ ui_4h completed"
 /opt/de_GWD/.custom/ui_4am 2>/dev/null && echo "  ✓ ui_4am completed"
 
