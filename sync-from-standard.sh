@@ -44,7 +44,8 @@ else
     LOCAL_PWD=$(jq -r '.address.PWD' /opt/de_GWD/0conf)
 
     # Pull shared fields from standard
-    SHARED_JSON=$(ssh "root@${STANDARD}" "jq '{dns, v2node, v2nodeDIV, ddns, wireguard, app, rulesIP, update}' /opt/de_GWD/0conf" 2>/dev/null)
+    # wireguard + ddns excluded: contain private keys and API credentials
+    SHARED_JSON=$(ssh "root@${STANDARD}" "jq '{dns, v2node, v2nodeDIV, app, rulesIP, update}' /opt/de_GWD/0conf" 2>/dev/null)
     if [[ -n "$SHARED_JSON" ]]; then
         # Merge: keep local machine-specific, apply standard shared
         jq --argjson shared "$SHARED_JSON" \

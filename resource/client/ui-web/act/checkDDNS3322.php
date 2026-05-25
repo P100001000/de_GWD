@@ -3,6 +3,6 @@
 <?php
 $ddns3322 = exec('sudo /opt/de_GWD/ui-checkDDNS3322 &');
 
-if ($ddns3322 == success) echo "installed";
+if ($ddns3322 == "success") echo "installed";
 ?>
 <?php }?>

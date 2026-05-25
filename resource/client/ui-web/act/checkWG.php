@@ -7,6 +7,6 @@ echo exec('sudo test -f "/lib/systemd/system/wg-quick.target" && echo installed'
 
 echo ' ';
 
-if ($checkWG == success) echo 'on';
+if ($checkWG == "success") echo 'on';
 ?>
 <?php }?>
