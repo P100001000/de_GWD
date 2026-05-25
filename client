@@ -2337,16 +2337,64 @@ SETUPVARS
   fi
 
   if [[ "$pi_installed" != "true" ]]; then
-    echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole install failed (network), skip${cRES}"
-    return 1
+    # Fallback: manual install FTL binary from GitHub releases
+    echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Pi-hole manual fallback${cRES}\r\c"
+    local FTL_VER="v6.6.2"
+    local f="pihole-FTL-amd64"
+    [[ "$architecture" = "arm64" ]] && f="pihole-FTL-arm64"
+
+    if [[ ! -x "/usr/bin/pihole-FTL" ]]; then
+        local ftl_url="https://github.com/pi-hole/FTL/releases/download/${FTL_VER}/${f}"
+        curl -fsSL -o /usr/bin/pihole-FTL "$(github_url "$ftl_url")" 2>/dev/null || \
+        curl -fsSL -o /usr/bin/pihole-FTL "$ftl_url" 2>/dev/null || true
+    fi
+
+    if [[ -s "/usr/bin/pihole-FTL" ]]; then
+        chmod +x /usr/bin/pihole-FTL
+        curl -fsSL -o /etc/pihole/pihole.toml "https://github.com/pi-hole/FTL/releases/download/${FTL_VER}/pihole.toml" 2>/dev/null || true
+        useradd -r -s /usr/sbin/nologin pihole 2>/dev/null || true
+        mkdir -p /var/log/pihole
+        chown -R pihole:pihole /etc/pihole /var/log/pihole 2>/dev/null || true
+        python3 -c "
+import toml
+with open('/etc/pihole/pihole.toml') as f: d=toml.load(f)
+d['dns']['port']=53
+d['dns']['upstreams']=['127.0.0.1#5341']
+d['webserver']['port']='8053'
+d['dns']['domainNeeded']=True
+with open('/etc/pihole/pihole.toml','w') as f: toml.dump(d,f)
+" 2>/dev/null || true
+        cat > /etc/systemd/system/pihole-FTL.service << 'SVCUNIT'
+[Unit]
+Description=Pi-hole FTL
+After=network-online.target
+[Service]
+Type=simple
+User=pihole
+Group=pihole
+ExecStart=/usr/bin/pihole-FTL -f
+Restart=on-failure
+RestartSec=5
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE
+[Install]
+WantedBy=multi-user.target
+SVCUNIT
+        systemctl daemon-reload
+        systemctl enable pihole-FTL 2>/dev/null
+        systemctl start pihole-FTL 2>/dev/null
+        sleep 2
+        pi_installed=true
+        echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole manual (${FTL_VER})${cRES}"
+    else
+        echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole install failed (network), skip${cRES}"
+        return 1
+    fi
   fi
 
   # Stop systemd-resolved if it conflicts on port 53
   systemctl stop systemd-resolved 2>/dev/null || true
   systemctl disable systemd-resolved 2>/dev/null || true
-
-  # Set web password
-  pihole -a -p "$pihole_pw" 2>/dev/null || true
 
   echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Pi-hole native installed${cRES}"
   return 0
