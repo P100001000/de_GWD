@@ -19,7 +19,7 @@ SCRIPTS=(
     ui-healCheck ui-NodeOne
 )
 echo ""
-echo "[1/4] Syncing generation scripts..."
+echo "[1/6] Syncing generation scripts..."
 mkdir -p "$CUSTOM_DIR"
 for s in "${SCRIPTS[@]}"; do
     if scp -q "root@${STANDARD}:/opt/de_GWD/${s}" "${CUSTOM_DIR}/${s}" 2>/dev/null; then
@@ -32,7 +32,7 @@ done
 
 # ── 2. Sync shared 0conf fields (preserve local IP/gateway) ──
 echo ""
-echo "[2/4] Syncing shared 0conf fields..."
+echo "[2/6] Syncing shared 0conf fields..."
 
 if [[ ! -f "/opt/de_GWD/0conf" ]]; then
     echo "  ✗ No local 0conf found, skipping"
@@ -69,7 +69,7 @@ fi
 
 # ── 3. Sync data files (if newer on standard) ──
 echo ""
-echo "[3/5] Syncing data files..."
+echo "[3/6] Syncing data files..."
 DATA_FILES=(
     "IPchnroute"
     "Domains.chn.txt"
