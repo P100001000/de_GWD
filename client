@@ -2372,11 +2372,14 @@ After=network-online.target
 Type=simple
 User=pihole
 Group=pihole
+ExecStartPre=/bin/mkdir -p /var/log/pihole
+ExecStartPre=/bin/touch /var/log/pihole/pihole.log /var/log/pihole/FTL.log
+ExecStartPre=/bin/chown pihole:pihole /var/log/pihole /var/log/pihole/pihole.log /var/log/pihole/FTL.log
 ExecStart=/usr/bin/pihole-FTL -f
 Restart=on-failure
 RestartSec=5
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE
-AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_CHOWN CAP_DAC_OVERRIDE
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_CHOWN CAP_DAC_OVERRIDE
 [Install]
 WantedBy=multi-user.target
 SVCUNIT
