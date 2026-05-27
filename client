@@ -893,6 +893,11 @@ done
 
 
 
+_skip_ifb_ingress=0
+case \$(uname -m) in
+    aarch64|armv7l|armv6l) _skip_ifb_ingress=1 ;;
+esac
+
 NIC_device=\$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device')
 for ifb in \$(echo \$NIC_device | xargs -n 1 | grep 'virtual' | awk -F'/' '{print\$NF}' | grep '^ifb'); do
 $(which ip) link set \$ifb down
@@ -903,6 +908,7 @@ $(which ip) link set lo qlen 10000 mtu 65520
 $(which tc) qdisc del dev lo root >/dev/null 2>&1
 $(which tc) qdisc add dev lo root cake unlimited rtt 50us diffserv4 dual-srchost nonat nowash no-split-gso ack-filter-aggressive raw egress
 
+if [[ \$_skip_ifb_ingress -eq 0 ]]; then
 $(which ip) link add name ifb4lo type ifb >/dev/null 2>&1
 $(which tc) qdisc del dev lo ingress >/dev/null 2>&1
 $(which tc) qdisc add dev lo handle ffff: ingress
@@ -911,6 +917,7 @@ $(which tc) qdisc add dev ifb4lo root cake unlimited rtt 50us diffserv4 dual-dst
 $(which ip) link set ifb4lo qlen 10000 mtu 65520
 $(which ip) link set ifb4lo up
 $(which tc) filter add dev lo parent ffff: matchall action mirred egress redirect dev ifb4lo
+fi
 
 echo \$NIC_device | xargs -n 1 | grep 'virtual' | awk -F'/' '{print\$NF}' | grep -v 'docker' | grep -v 'ifb' | grep -v '^lo\$' | while read line; do
 MTU_NUM=\$(< /sys/class/net/\$line/mtu)
@@ -919,6 +926,7 @@ $(which ip) link set \$line qlen 10001 mtu \$MTU_NUM
 $(which tc) qdisc del dev \$line root >/dev/null 2>&1
 $(which tc) qdisc add dev \$line root cake unlimited rtt 200us diffserv4 dual-srchost nonat nowash no-split-gso ack-filter raw overhead 18 mpu 64 egress
 
+if [[ \$_skip_ifb_ingress -eq 0 ]]; then
 $(which ip) link add name \$ifb4eth type ifb >/dev/null 2>&1
 $(which tc) qdisc del dev \$line ingress >/dev/null 2>&1
 $(which tc) qdisc add dev \$line handle ffff: ingress
@@ -927,6 +935,7 @@ $(which tc) qdisc add dev \$ifb4eth root cake unlimited rtt 200us diffserv4 dual
 $(which ip) link set \$ifb4eth qlen 10001 mtu \$MTU_NUM
 $(which ip) link set \$ifb4eth up
 $(which tc) filter add dev \$line parent ffff: matchall action mirred egress redirect dev \$ifb4eth
+fi
 done
 
 echo \$NIC_device | xargs -n 1 | grep -v 'virtual' | awk -F'/' '{print\$NF}' | while read line; do
@@ -936,6 +945,7 @@ $(which ip) link set \$line qlen 10001 mtu \$MTU_NUM
 $(which tc) qdisc del dev \$line root >/dev/null 2>&1
 $(which tc) qdisc add dev \$line root cake unlimited besteffort dual-srchost nonat nowash no-split-gso ack-filter ethernet egress
 
+if [[ \$_skip_ifb_ingress -eq 0 ]]; then
 $(which ip) link add name \$ifb4eth type ifb >/dev/null 2>&1
 $(which tc) qdisc del dev \$line ingress >/dev/null 2>&1
 $(which tc) qdisc add dev \$line handle ffff: ingress
@@ -944,6 +954,7 @@ $(which tc) qdisc add dev \$ifb4eth root cake unlimited diffserv4 dual-dsthost n
 $(which ip) link set \$ifb4eth qlen 10001 mtu \$MTU_NUM
 $(which ip) link set \$ifb4eth up
 $(which tc) filter add dev \$line parent ffff: matchall action mirred egress redirect dev \$ifb4eth
+fi
 
 $(which ethtool) -s \$line duplex full >/dev/null 2>&1
 $(which ethtool) -K \$line rx on tx on sg off gro off gso off tx-gso-partial off lro off tso off ufo off >/dev/null 2>&1
