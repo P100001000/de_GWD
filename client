@@ -457,7 +457,7 @@ if [[ $1 = "u" ]]; then
         updateGWD_Green
         [[ -z $serverConnect1 ]] || [[ -z $serverConnect2 ]] && exit
     else
-        if [[ -n $serverConnect1 ]] && [[ -n $serverConnect2 ]] && [[ $(systemctl is-active 'vtrui') = "active" ]]; then
+        if [[ -n $serverConnect1 ]] && [[ -n $serverConnect2 ]] && [[ $(systemctl is-active 'vtrui' 2>/dev/null) = "active" ]]; then
         echo -e "${WHITE}de_GWD server connect  ${cRES}\c" && echo -e "\t${WHITE}[${GREEN} ✓ ${WHITE}]${cRES}"
         de_GWDconnect_check="OK"
             echo -e "${GREEN}================================= ${cRES}"
@@ -479,7 +479,7 @@ if [[ $1 = "u" ]]; then
         fi
     fi
 else
-    if [[ -n $serverConnect1 ]] && [[ -n $serverConnect2 ]] && [[ $(systemctl is-active 'vtrui') = "active" ]]; then
+    if [[ -n $serverConnect1 ]] && [[ -n $serverConnect2 ]] && [[ $(systemctl is-active 'vtrui' 2>/dev/null) = "active" ]]; then
         echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}de_GWD server connect${cRES}"
     else
         echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}de_GWD server connect${cRES}"
@@ -508,7 +508,7 @@ fi
 preInstall(){
 sync; echo 3 >/proc/sys/vm/drop_caches >/dev/null 2>&1
 
-if [[ $(systemctl is-active swap.target) != "active" ]]; then
+if [[ $(systemctl is-active swap.target 2>/dev/null) != "active" ]]; then
 systemctl unmask swap.target >/dev/null 2>&1
 systemctl start swap.target >/dev/null 2>&1
 fi
@@ -1743,7 +1743,7 @@ systemctl daemon-reload >/dev/null
 systemctl enable nftables >/dev/null 2>&1
 systemctl restart nftables
 
-if [[ $(systemctl is-active 'nftables') != "active" ]]; then
+if [[ $(systemctl is-active 'nftables' 2>/dev/null) != "active" ]]; then
   systemctl restart nftables
   if [[ $? -ne 0 ]]; then
   rm -rf /opt/de_GWD/nftables/flowtable.nft >/dev/null 2>&1
@@ -2708,7 +2708,7 @@ postInstall
 
 serverStatus(){
 echo
-if [[ $(systemctl is-active 'smartdns') = "active" ]]; then
+if [[ $(systemctl is-active 'smartdns' 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} SmartDNS       \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/opt/de_GWD/smartdns/smartdns" ]]; then
   echo -e "${WHITE} SmartDNS       \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
@@ -2716,7 +2716,7 @@ else
   echo -e "${WHITE} SmartDNS       \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'mosdns') = "active" ]]; then
+if [[ $(systemctl is-active 'mosdns' 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} mosdns         \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/opt/de_GWD/mosdns/mosdns" ]]; then
   echo -e "${WHITE} mosdns         \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
@@ -2732,7 +2732,7 @@ else
   echo -e "${WHITE} Pi-hole        \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'vtrui') = "active" ]]; then
+if [[ $(systemctl is-active 'vtrui' 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} Xray           \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/opt/de_GWD/vtrui/vtrui" ]]; then
   echo -e "${WHITE} Xray           \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
@@ -2740,7 +2740,7 @@ else
   echo -e "${WHITE} Xray           \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'nginx') = "active" ]]; then
+if [[ $(systemctl is-active 'nginx' 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} Nginx          \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [[ ! -x "/usr/sbin/nginx" ]]; then
   echo -e "${WHITE} Nginx          \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
@@ -2748,7 +2748,7 @@ else
   echo -e "${WHITE} Nginx          \c" && echo -e "${WHITE}[ ${RED}✕ ${WHITE}]${cRES}"
 fi
 
-if [[ $(systemctl is-active 'php7.4-fpm') = "active" ]]; then
+if [[ $(systemctl is-active 'php7.4-fpm' 2>/dev/null) = "active" ]]; then
   echo -e "${WHITE} php7.4-FPM     \c" && echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]${cRES}"
 elif [ ! -f "/etc/php/7.4/fpm/php-fpm.conf" ]; then
   echo -e "${WHITE} php7.4-FPM     \c" && echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]${cRES}"
