@@ -32,6 +32,11 @@ chmod +x client
 ./client
 ```
 
+## 镜像测速换源 (Armbian/Debian):
+```
+bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubusercontent.com/P100001000/de_GWD/arm/speedtest.sh)
+```
+
 ![de_GWD 1](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/1.png)
 ![de_GWD 2](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/2.png)
 ![de_GWD 3](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/3.png)
