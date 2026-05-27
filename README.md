@@ -1,14 +1,17 @@
-# 寒月
-* 具备流量整形加速的旁路网关
-* 仅供学习与研究，不支持机场的双端自建方案
+# de_GWD (ARM-only)
 
-* 基于性能考量，尽量避免使用虚拟交换
+基于 [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) (v1.26.5)，**仅 ARM64 适配分支**，不做功能修改。
+
+* 具备流量整形加速的旁路网关
+* 仅供学习与研究
+* 内核仅支持 Zabbly (ARM 兼容)
+* 在 ARM 平台自动跳过 IFB CAKE ingress（避免弱 CPU 过载）
 
 
 [![Telegram](https://cdn.jsdelivr.net/gh/Patrolavia/telegram-badge@8fe3382b3fd3a1c533ba270e608035a27e430c2e/chat.svg)](https://t.me/de_GWD_DQ)  
 
 
-## Server (amd64 & arm64) support kvm xen openvz lxc and so on:
+## Server (arm64) support kvm xen openvz lxc and so on:
 ```
 apt install -y wget
 bash <(wget --no-check-certificate -qO- https://raw.githubusercontent.com/jacyl4/de_GWD/main/server)
@@ -16,7 +19,7 @@ bash <(wget --no-check-certificate -qO- https://raw.githubusercontent.com/jacyl4
 
 ![de_GWD 0](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/0.png)
 
-## Client (amd64 & arm64):
+## Client (arm64):
 ```
 apt install -y wget
 bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubusercontent.com/jacyl4/de_GWD/main/client)
@@ -35,8 +38,8 @@ chmod +x client
 ![de_GWD 4](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/4.png)
 ![de_GWD 5](https://raw.githubusercontent.com/jacyl4/de_GWD/main/resource/screenshot/5.png)
 
-## Manual:
-[Deepwiki 自动生成的文档](https://deepwiki.com/jacyl4/de_GWD)    
+## 原始项目
+* [jacyl4/de_GWD](https://github.com/jacyl4/de_GWD) — 原版（已归档，2025年10月）
 
 ## Thanks to
 * [ XTLS/Xray-core ](https://github.com/XTLS/Xray-core)
@@ -50,7 +53,6 @@ chmod +x client
 * [ makotom/cfspeed ](https://github.com/makotom/cfspeed)
 * [ mzz2017/lkl-haproxy ](https://github.com/mzz2017/lkl-haproxy)
 * [ zabbly/linux ](https://github.com/zabbly/linux)
-* [ xanmod/linux ](https://github.com/xanmod/linux)
 * [ tsl0922/ttyd ](https://github.com/tsl0922/ttyd)
 * [ mikefarah/yq ](https://github.com/mikefarah/yq)
 * [ nyanmisaka/jellyfin ](https://hub.docker.com/r/nyanmisaka/jellyfin)
