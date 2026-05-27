@@ -2171,7 +2171,7 @@ if [[ $virt_type = "container" ]]; then
  echo -e "${GREEN}\__,_/\___/____\____/  |__/|__/_____/   ${cRES}"
  echo -e "${GREEN}         /_____/                        ${cRES}"
  echo
- echo -e "${GREEN}Require: Debian (amd64 && arm64) ${cRES}"
+ echo -e "${GREEN}Require: Debian (arm64) ${cRES}"
  echo -e "${GREEN}Author:  JacyL4${cRES}"
  echo -e "${GREEN}================================================================ ${cRES}"
  echo
@@ -2245,7 +2245,7 @@ else
  echo -e "${GREEN}\__,_/\___/____\____/  |__/|__/_____/   ${cRES}"
  echo -e "${GREEN}         /_____/                        ${cRES}"
  echo
- echo -e "${GREEN}Require: Debian (amd64 && arm64) ${cRES}"
+ echo -e "${GREEN}Require: Debian (arm64) ${cRES}"
  echo -e "${GREEN}Author:  JacyL4${cRES}"
  echo -e "${GREEN}================================================================ ${cRES}"
  echo

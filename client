@@ -21,11 +21,7 @@ bash <(wget --no-check-certificate -qO- https://ghproxy.net/https://raw.githubus
 EOF
 `
 
-if [[ $architecture = "arm64" ]];then
 chnAPTsource="mirrors.tuna.tsinghua.edu.cn"
-elif [[ $architecture = "amd64" ]]; then
-chnAPTsource="mirrors.aliyun.com"
-fi
 
 pkgDEP1(){
 if [[ $architecture = "arm64" ]];then
@@ -2795,7 +2791,7 @@ serverStatus
  echo -e "${GREEN}\__,_/\___/____\____/  |__/|__/_____/   ${cRES}"
  echo -e "${GREEN}         /_____/                        ${cRES}"
  echo
- echo -e "${GREEN}Require: Debian (amd64 && arm64) ${cRES}"
+ echo -e "${GREEN}Require: Debian (arm64) ${cRES}"
  echo -e "${GREEN}Author:  JacyL4${cRES}"
  echo -e "${GREEN}================================================================ ${cRES}"
  echo
