@@ -89,46 +89,30 @@ rm -rf /tmp/now.cron
 
 
 cleanOldKernels() {
-  local kernel_type=$1
-  
-if [[ $kernel_type == "zabbly" ]]; then
   rm -rf /etc/apt/sources.list.d/xanmod-kernel.list
   rm -rf /etc/apt/keyrings/xanmod.gpg
   rm -rf /etc/apt/sources.list.d/liquorix-kernel.list
   rm -rf /etc/apt/keyrings/liquorix.gpg
-elif [[ $kernel_type == "xanmod" ]]; then
-  rm -rf /etc/apt/sources.list.d/zabbly-kernel.list
-  rm -rf /etc/apt/keyrings/zabbly.gpg
-  rm -rf /etc/apt/sources.list.d/liquorix-kernel.list
-  rm -rf /etc/apt/keyrings/liquorix.gpg
-elif [[ $kernel_type == "liquorix" ]]; then
-  rm -rf /etc/apt/sources.list.d/zabbly-kernel.list
-  rm -rf /etc/apt/keyrings/zabbly.gpg
-  rm -rf /etc/apt/sources.list.d/xanmod-kernel.list
-  rm -rf /etc/apt/keyrings/xanmod.gpg
-fi
-  
-  dpkg --list | awk '{print $2}' | grep 'linux-image' | sed "/$kernel_type/d" | while read line; do
+
+  dpkg --list | awk '{print $2}' | grep 'linux-image' | grep -Fv zabbly | while read line; do
     apt autoremove --purge -y $line
   done
 
-  dpkg --list | awk '{print $2}' | grep 'linux-headers' | sed "/$kernel_type/d" | while read line; do
+  dpkg --list | awk '{print $2}' | grep 'linux-headers' | grep -Fv zabbly | while read line; do
     apt autoremove --purge -y $line
   done
-  
+
   apt autoremove --purge -y && apt clean -y && apt autoclean -y
-  
+
   update-initramfs -u -k all
   update-grub
 }
 
 
 
+
 installZabbly(){
 echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Zabbly kernel${cRES}\r\c"
-if [[ $architecture != "amd64" ]]; then
-  echo -e "${RED}only work on x86_64${cRES}"
-elif [[ $architecture == "amd64" ]]; then
 cat << EOF >/etc/apt/keyrings/zabbly.asc
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -177,7 +161,7 @@ echo "deb [signed-by=/etc/apt/keyrings/zabbly.asc] http://pkgs.zabbly.com/kernel
 apt update && apt install linux-zabbly
 
 if [[ -n $(dpkg --list | grep linux-image | grep zabbly) ]]; then
-  cleanOldKernels "zabbly"
+  cleanOldKernels
 
   echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Zabbly kernel${cRES}"
   reboot
@@ -190,144 +174,18 @@ else
   done
 
   rm -rf /etc/apt/sources.list.d/zabbly-kernel.list
-  rm -rf /etc/apt/keyrings/zabbly.gpg
+  rm -rf /etc/apt/keyrings/zabbly.asc
   echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Clear up & Exit${cRES}"
   exit
-fi
-fi
-}
-
-
-
-get_cpu_arch_level() {
-    local flags_line
-    flags_line=$(awk -F: '/^flags/{print $2; exit}' /proc/cpuinfo)
-
-    local has_all
-    has_all() {
-        local -n req=$1
-        local r
-        for r in "${req[@]}"; do
-            [[ " $flags_line " == *" $r "* ]]
-        done
-    }
-
-    local -a v3=(avx avx2 bmi1 bmi2 f16c fma abm movbe xsave)
-
-    CPU_LEVEL="v2"
-
-    if has_all v3; then
-        CPU_LEVEL="v3"
-    fi
-}
-
-
-
-installXanMod(){
-echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}XanMod kernel${cRES}\r\c"
-if [[ $architecture != "amd64" ]]; then
-  echo -e "${RED}only work on x86_64${cRES}"
-elif [[ $architecture == "amd64" ]]; then
-get_cpu_arch_level
-cat << EOF >/tmp/xanmod.gpg.key
------BEGIN PGP PUBLIC KEY BLOCK-----
-Version: GnuPG v2
-
-mQENBFhxW04BCAC61HuxBVf1XJiQjXu/DSAtVcnuK38geDoDjcqFtHskFy32NgJG
-X118EFNym6noF+oibaSftI9yjHthWvMnYZ/+DPwd7YZhbAjBvxMIQCsP6cFVxrgc
-VV8g+uh4TCfbpalDBFoncRhQCgkmDN9Vd4kIWRh6BHJuzpKB/h2KxUHZVEKgWlK2
-dR1xUtbrc+kp8gLwPbxTgC3tZ4x2uMMMlnbyCMSRa5oJ/AvoW4W1XphKL9ivsFHM
-PSQkUBDvgv2RPw+0XBxPy8SYE0r0onx0ZIpjJRTODt3bSV6/0owwlpNogV9bT8HY
-kl3+w3mTwax6S1akHZuJtLkZS0uUBz1BHt5bABEBAAG0IVhhbk1vZCBLZXJuZWwg
-PGtlcm5lbEB4YW5tb2Qub3JnPokBNwQTAQgAIQUCWHFbTgIbAwULCQgHAgYVCAkK
-CwIEFgIDAQIeAQIXgAAKCRCG99Ce5zTmIwTmB/9/S4rmwU6efDgEaBDwBDbOfLBA
-P2+kDpabjG4K+V4NSvDqlPN49KrI7C21jHghAa2VuTPbSZVQ9ziUd5DjX9OuXov8
-CYVG+rrlG1UadHS8SBpgw0gNylEvo9/U6u0hl8mrbVOlpzu+eE+e4cMTHax2y580
-fC2xmnM8wKgyRFEyVc6ilWU+UNTAeUFlg0YfU3cV1Ut4DzVFfamtNYg0p7Q/9MSy
-VgFpt5C2U5prk4wi++51OgrtaNhMrUhzYXLINWVF6IrXhQ+mkI/FWXUZ0oyVo55v
-+dQzuds/gos90q+tKyE514pYAmwQSftSjf+RmHOMpPQyMZZKSywrz4vlfveDuQEN
-BFhxW04BCACs5bXq73MDb2+AsvNL2XkkbnzmE4K3k0gejB9OxrO+puAZn3wWyYIk
-b0Op8qVUh+/FIiW/uFfmdFD8BypC3YkCNfg6e74f5TT3qQciccpMGy62teo3jfhT
-T8E1OL1i76ALq7eNbByJKiKLBrTUDM6BDIeRZBWXQMase4+aqUAP47Kd/ByPsmCh
-/pzb6yPdDPKwkspELssdPXYI7enddjQsCPoBko0j8CTPgKqMTeCuKMXCtD2gtRBN
-eoVj4cbjZoZvBh8oJktzbYA8FX8eKdxIXhSP9MoVOPSWhxIQdwzkzUPK+0vUV8jA
-NBTnGOkrRJPOHGPJWFWnTUGrzvcwi7czABEBAAGJAR8EGAEIAAkFAlhxW04CGwwA
-CgkQhvfQnuc05iMIswgAmzSpCHFGKdkFLdC673FidJcL8adKFTO5Mpyholc5N8vG
-ROJbpso+DpssF14NKoBfBWqPRgHxYzHakxHiNf0R2+EEwXH3rblzpx3PXzB0OgNe
-T9T0UStrGgc9nZ8nZVURHZZ2z5zakEWS+rB2TiSxz3YArR3wiTHQW49G09uZvfp6
-5Mim2w+eUxbQ689eT0DlDI1d2eDP/j5lrv1elsg3kBE2Awzdvi8DdGUpMFrSsYJw
-WS85uZrwbeAs/nPO62wNIvAbbRsWnDg3AV3vc02eRvy52tTBY1W/67N02M4AxgPd
-ukDDFZMifwa03yTHD/a57O4dFOnzsEVojBnbzQ7W7w==
-=HKlF
------END PGP PUBLIC KEY BLOCK-----
-EOF
-cat /tmp/xanmod.gpg.key | gpg --dearmor >/etc/apt/keyrings/xanmod.gpg
-echo "deb [signed-by=/etc/apt/keyrings/xanmod.gpg] http://deb.xanmod.org releases main" >/etc/apt/sources.list.d/xanmod-kernel.list
-
-apt update && apt install linux-xanmod-x64$CPU_LEVEL
-
-if [[ -n $(dpkg --list | grep linux-image | grep xanmod) ]]; then
-  # 清理旧内核
-  cleanOldKernels "xanmod"
-
-  echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}XanMod kernel${cRES}"
-  reboot
-  exit
-else
-  echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}XanMod kernel ${RED}Install Failed${cRES}"
-
-  dpkg --list | awk '{print $2}' | grep xanmod | while read line; do
-  apt autoremove --purge $line
-  done
-
-  rm -rf /etc/apt/sources.list.d/xanmod-kernel.list
-  rm -rf /etc/apt/keyrings/xanmod.gpg
-  echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Clear up & Exit${cRES}"
-  exit
-fi
-fi
-}
-
-
-
-installLiquorix(){
-echo -e "${WHITE}[...]\c" && echo -e "\t${WHITE}Liquorix kernel${cRES}\r\c"
-if [[ $architecture != "amd64" ]]; then
-  echo -e "${RED}only work on x86_64${cRES}"
-elif [[ $architecture == "amd64" ]]; then
-curl -fsSLo /tmp/liquorix.gpg.key https://liquorix.net/liquorix-keyring.gpg
-cat /tmp/liquorix.gpg.key | gpg --dearmor >/etc/apt/keyrings/liquorix.gpg
-echo "deb [signed-by=/etc/apt/keyrings/liquorix.gpg] http://liquorix.net/debian $(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1) main" >/etc/apt/sources.list.d/liquorix-kernel.list
-
-apt update && apt install linux-image-liquorix-amd64 linux-headers-liquorix-amd64
-
-if [[ -n $(dpkg --list | grep linux-image | grep liquorix) ]]; then
-  cleanOldKernels "liquorix"
-
-  echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Liquorix kernel${cRES}"
-  reboot
-  exit
-else
-  echo -e "${WHITE}[ ${RED}✕ ${WHITE}]\c" && echo -e "\t${WHITE}Liquorix kernel ${RED}Install Failed${cRES}"
-
-  dpkg --list | awk '{print $2}' | grep liquorix | while read line; do
-  apt autoremove --purge $line
-  done
-
-  rm -rf /etc/apt/sources.list.d/liquorix-kernel.list
-  rm -rf /etc/apt/keyrings/liquorix.gpg
-  echo -e "${WHITE}[ ${YELLOW}! ${WHITE}]\c" && echo -e "\t${YELLOW}Clear up & Exit${cRES}"
-  exit
-fi
 fi
 }
 
 
 
 echo -e "${GREEN}======================================== ${cRES}"
-echo -e "${GREEN}[1]: Install Zabbly kernel and reboot ${cRES}"
-echo -e "${GREEN}[2]: Install XanMod kernel and reboot ${cRES}"
-echo -e "${GREEN}[3]: Install Liquorix kernel and reboot ${cRES}"
+echo -e "${GREEN}Install Zabbly kernel and reboot? ${cRES}"
+echo -e "${GREEN}[1]: Yes, install and reboot ${cRES}"
+echo -e "${GREEN}[2]: No, exit ${cRES}"
 echo -e "${GREEN}======================================== ${cRES}"
 read -s -n 1 kernelSwitch
 
@@ -336,8 +194,7 @@ case $kernelSwitch in
       installZabbly
     ;;
   "2")
-      installXanMod
+      echo -e "${YELLOW}Exit${cRES}"
+      exit
     ;;
-  "3")
-      installLiquorix
 esac
