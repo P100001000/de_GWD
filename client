@@ -2272,6 +2272,12 @@ data['webserver']['api']['pwhash'] = "$piholePW"
 with open("/opt/de_GWD/pihole/pihole.toml", "w") as f:
     toml.dump(data, f)
 EOF
+
+# 等待 Pi-hole 初始化生成 toml 文件（容器后台启动需要时间）
+for i in $(seq 1 30); do
+	[[ -f /opt/de_GWD/pihole/pihole.toml ]] && break
+	sleep 1
+done
 }
 
 
