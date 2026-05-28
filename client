@@ -85,8 +85,8 @@ pkgDEP2(){
 # Docker: 使用 Debian 主源 docker.io（无需额外 GPG，国内 aliyun 镜像可用）
 rm -f /etc/apt/sources.list.d/docker.list
 
-
 unset aptPKG
+[[ -z $(dpkg -l | awk '{print$2}' | grep '^docker-cli$') ]] && aptPKG+=(docker-cli)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^python3-toml$') ]] && aptPKG+=(python3-toml)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^psmisc$') ]] && aptPKG+=(psmisc)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^dns-root-data$') ]] && aptPKG+=(dns-root-data)
