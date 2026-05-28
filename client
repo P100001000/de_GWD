@@ -1078,8 +1078,6 @@ systemctl daemon-reload >/dev/null
 mkdir -p /var/log/smartdns
 >/var/log/smartdns/smartdns.log
 cat << EOF >/opt/de_GWD/smartdns/smartdns.conf
-bind :53 -group DNS_global
-
 bind 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
 bind-tcp 127.0.0.1:5331 -no-speed-check -no-cache -group DNS_chn
 
