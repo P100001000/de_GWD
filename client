@@ -704,7 +704,10 @@ ip route flush table 220 >/dev/null 2>&1
 ip route flush cache >/dev/null 2>&1
 ip route del local default dev lo table 220 >/dev/null 2>&1
 
+# 仅首次安装停止 nftables，已部署环境保留运行中的规则
+if ! nft list tables 2>/dev/null | grep -q de_GWD; then
 [[ -n $(systemctl cat nftables 2>/dev/null) ]] && systemctl stop nftables >/dev/null 2>&1
+fi
 [[ -n $(systemctl cat vtrui 2>/dev/null) ]] && systemctl stop vtrui >/dev/null 2>&1
 }
 
