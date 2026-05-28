@@ -668,6 +668,15 @@ systemctl enable chrony >/dev/null 2>&1
 
 rm -rf /etc/systemd/resolved.conf >/dev/null 2>&1
 systemctl daemon-reload >/dev/null
+
+# 先写死 resolv.conf 再杀 resolved（避免 symlink 断链致 DNS 全挂）
+rm -f /etc/resolv.conf
+cat << EOF >/etc/resolv.conf
+nameserver 119.29.29.29
+nameserver 180.76.76.76
+nameserver 114.114.114.114
+nameserver 223.5.5.5
+EOF
 systemctl mask --now systemd-resolved >/dev/null 2>&1
 
 [[ -n $(which setenforce) ]] && setenforce 0
@@ -680,13 +689,6 @@ ip route del local default dev lo table 220 >/dev/null 2>&1
 
 [[ -n $(systemctl cat nftables 2>/dev/null) ]] && systemctl stop nftables >/dev/null 2>&1
 [[ -n $(systemctl cat vtrui 2>/dev/null) ]] && systemctl stop vtrui >/dev/null 2>&1
-
-cat << EOF >/etc/resolv.conf
-nameserver 119.29.29.29
-nameserver 180.76.76.76
-nameserver 114.114.114.114
-nameserver 223.5.5.5
-EOF
 }
 
 
