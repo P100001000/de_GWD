@@ -2819,8 +2819,8 @@ serverStatus
  echo -e "${GREEN}Author:  JacyL4${cRES}"
  echo -e "${GREEN}================================================================ ${cRES}"
  echo
- echo -e "${GREEN}1. Install de_GWD${cRES}"
- echo -e "${GREEN}2. Install new kernel and reboot${cRES}"
+ echo -e "${GREEN}1. Install new kernel and reboot${cRES}"
+ echo -e "${GREEN}2. Install de_GWD${cRES}"
 echo -e "${YELLOW}3. Clear Pi-hole Subscribed lists${cRES}"
 echo -e "${YELLOW}8. Change Web UI port & Web update port${cRES}"
 echo -e "${YELLOW}9. Change de_GWD password${cRES}"
@@ -2830,11 +2830,11 @@ echo ""
 read -p "Select:" num
     case "$num" in
     1)
-    installGWD
+    installkernel
     start_menu
     ;;
     2)
-    installkernel
+    installGWD
     start_menu
     ;;
     3)
