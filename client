@@ -378,7 +378,7 @@ echo -e "${BLUE}################################################################
 echo -e "${GREEN}DNS information${cRES}"
 echo
 
-ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | head -n1)
+ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | while read iface; do [[ $(cat /sys/class/net/$iface/carrier 2>/dev/null) = "1" ]] && echo "$iface" && break; done)
 gatewayAddr=$(jq -r '.address.upstreamIP' /opt/de_GWD/0conf | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}')
 localAddrCIDR=$(jq -r '.address.localIP' /opt/de_GWD/0conf | grep -v '^null$')
 localAddr=$(echo $localAddrCIDR | cut -d / -f1)
@@ -2552,7 +2552,7 @@ installGWD(){
     echo -e "${GREEN}=========================== ${cRES}"
     read path
 
-ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | head -n1)
+ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | while read iface; do [[ $(cat /sys/class/net/$iface/carrier 2>/dev/null) = "1" ]] && echo "$iface" && break; done)
 netmask=$(ip route | grep "$ethernetnum" | grep 'kernel' | awk '{print$1}' | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
 [[ -z $netmask ]] && netmask="/24"
 localAddr=$(echo $localAddr | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
