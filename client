@@ -2360,9 +2360,11 @@ EOF
 
 docker restart pihole >/dev/null 2>&1
 
-# Pi-hole 已接管 :53，切换 DNS 到本地
+# Pi-hole 已接管 :53，切换 DNS 到本地（确认 Pi-hole 在跑才切）
+if docker ps 2>/dev/null | grep -q pihole; then
 rm -f /etc/resolv.conf
 echo 'nameserver 127.0.0.1' > /etc/resolv.conf
+fi
 
 if [[ -n $(jq -r '.address.alias' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') ]]; then
   /opt/de_GWD/ui-markThis >/dev/null 2>&1
