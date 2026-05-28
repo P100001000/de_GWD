@@ -1123,22 +1123,7 @@ systemctl restart smartdns
 fi
 systemctl enable smartdns >/dev/null 2>&1
 
-rm -rf /etc/resolvconf/resolv.conf.d/*
->/etc/resolvconf/resolv.conf.d/original
->/etc/resolvconf/resolv.conf.d/base
->/etc/resolvconf/resolv.conf.d/tail
-rm -rf /etc/resolv.conf
-rm -rf /run/resolvconf/interface
-cat << EOF >/etc/resolvconf/resolv.conf.d/head
-nameserver 127.0.0.1
-EOF
-if [[ -f "/etc/resolvconf/run/resolv.conf" ]]; then
-ln -sf /etc/resolvconf/run/resolv.conf /etc/resolv.conf
-elif [[ -f "/run/resolvconf/resolv.conf" ]]; then
-ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf
-fi
 sed -i '/dns-nameservers /d' /etc/network/interfaces
-resolvconf -u
 echo -e "${WHITE}[ ${GREEN}✓ ${WHITE}]\c" && echo -e "\t${WHITE}Deploy SmartDNS${cRES}"
 
 
@@ -2357,6 +2342,10 @@ with open("/opt/de_GWD/pihole/pihole.toml", "w") as f:
 EOF
 
 docker restart pihole >/dev/null 2>&1
+
+# Pi-hole 已接管 :53，切换 DNS 到本地
+rm -f /etc/resolv.conf
+echo 'nameserver 127.0.0.1' > /etc/resolv.conf
 
 if [[ -n $(jq -r '.address.alias' /opt/de_GWD/0conf 2>/dev/null | grep -v '^null$') ]]; then
   /opt/de_GWD/ui-markThis >/dev/null 2>&1
