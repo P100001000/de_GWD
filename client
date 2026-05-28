@@ -733,9 +733,21 @@ nf_conntrack
 ifb
 sch_cake
 EOF
-modprobe nf_conntrack
-modprobe ifb
-modprobe sch_cake
+modprobe nf_conntrack 2>/dev/null
+modprobe ifb 2>/dev/null
+modprobe sch_cake 2>/dev/null
+
+if ! lsmod | grep -q sch_cake; then
+echo -e "${YELLOW}========================================${cRES}"
+echo -e "${YELLOW}  CAKE/IFB kernel modules not available${cRES}"
+echo -e "${YELLOW}  Stock Armbian kernel lacks traffic shaping${cRES}"
+echo -e "${YELLOW}  Run menu option 2 first: Install new kernel${cRES}"
+echo -e "${YELLOW}========================================${cRES}"
+echo ""
+echo -ne "${YELLOW}Install Zabbly kernel now and reboot? [Y/n] ${cRES}"
+read -r kern_choice
+[[ $kern_choice != "n" && $kern_choice != "N" ]] && installkernel
+fi
 
 cat << EOF >/etc/sysctl.conf
 kernel.sysrq = 438
