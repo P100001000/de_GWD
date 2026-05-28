@@ -367,7 +367,7 @@ echo -e "${GREEN}DNS information${cRES}"
 echo
 
 ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | head -n1)
-gatewayAddr=$(jq -r '.address.upstreamIP' /opt/de_GWD/0conf | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+gatewayAddr=$(jq -r '.address.upstreamIP' /opt/de_GWD/0conf | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}')
 localAddrCIDR=$(jq -r '.address.localIP' /opt/de_GWD/0conf | grep -v '^null$')
 localAddr=$(echo $localAddrCIDR | cut -d / -f1)
 netmask=$(echo $localAddrCIDR | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
@@ -1141,7 +1141,7 @@ if [[ -n $doh1 ]]; then
 echo -e "${WHITE}DNS over Https 1:\t${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 doh1Domain=$(echo $doh1 | cut -d/ -f1 | cut -d: -f1)
-doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh1IP=$(dig @127.0.0.1 $doh1Domain -4p 5331 +short | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 
 if [[ -n $doh1IP ]]; then
 doh1Port=$(echo $doh1 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
@@ -1166,7 +1166,7 @@ if [[ -n $doh2 ]]; then
 echo -e "${WHITE}DNS over Https 2: ${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 doh2Domain=$(echo $doh2 | cut -d/ -f1 | cut -d: -f1)
-doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+doh2IP=$(dig @127.0.0.1 $doh2Domain -4p 5331 +short | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 
 if [[ -n $doh2IP ]]; then
 doh2Port=$(echo $doh2 | cut -d/ -f1 | cut -d: -f2 | grep '^[[:digit:]]*$')
@@ -1193,7 +1193,7 @@ if [[ -n $DoG ]]; then
 echo -e "${WHITE}DNS over gRPC: ${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 DoGcDomain=$(echo $DoG | cut -d: -f1)
-DoGcIP=$(dig @127.0.0.1 $DoGcDomain -4p 5331 +short | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+DoGcIP=$(dig @127.0.0.1 $DoGcDomain -4p 5331 +short | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 DoGcPort=$(echo $DoG | cut -d: -f2 | grep '^[[:digit:]]*$')
 echo -e "${WHITE}Domain: ${YELLOW}$DoGcDomain\c" && echo -e "\t${WHITE}IP: ${YELLOW}$DoGcIP${cRES}"
 echo
@@ -1227,7 +1227,7 @@ echo -e "${WHITE}V2 node: ${cRES}"
 echo -e "${WHITE}Domain: \c" && echo -e "\t${WHITE}IP: ${cRES}\r\c"
 systemctl stop mosdns
 sleep 5
-domainIP=$(dig @127.0.0.1 $domain -4p 5332 +short | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
+domainIP=$(dig @127.0.0.1 $domain -4p 5332 +short | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v "127.0.0.1" | xargs -n 1 | awk NR==1)
 echo -e "${WHITE}Domain: ${YELLOW}$domain\c" && echo -e "\t${WHITE}IP: ${YELLOW}$domainIP${cRES}"
 echo
 echo -e "${BLUE}################################################################# ${cRES}"
@@ -1450,7 +1450,7 @@ sed -i '/^\s*$/d' /opt/de_GWD/nftables/IP_CHNROUTE
 sed -i 's/$/,/g' /opt/de_GWD/nftables/IP_CHNROUTE
 fi
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_CHNROUTE 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_CHNROUTE_elements="elements = { $(cat /opt/de_GWD/nftables/IP_CHNROUTE) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_CHNROUTE 2>&1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}') ]] && IP_CHNROUTE_elements="elements = { $(cat /opt/de_GWD/nftables/IP_CHNROUTE) }"
 cat << EOF >/opt/de_GWD/nftables/SET_CHNROUTE.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1465,7 +1465,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_CHNROUTE.nft
 /opt/de_GWD/nftables/SET_CHNROUTE.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listB 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listB_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listB) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listB 2>&1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}') ]] && IP_listB_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listB) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listB.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1480,7 +1480,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listB.nft
 /opt/de_GWD/nftables/SET_listB.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listW 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listW_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listW) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listW 2>&1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}') ]] && IP_listW_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listW) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listW.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1495,7 +1495,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listW.nft
 /opt/de_GWD/nftables/SET_listW.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listBlan 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listBlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listBlan) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listBlan 2>&1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}') ]] && IP_listBlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listBlan) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listBlan.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -1510,7 +1510,7 @@ EOF
 chmod +x /opt/de_GWD/nftables/SET_listBlan.nft
 /opt/de_GWD/nftables/SET_listBlan.nft
 
-[[ -n $(cat /opt/de_GWD/nftables/IP_listWlan 2>&1 | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') ]] && IP_listWlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listWlan) }"
+[[ -n $(cat /opt/de_GWD/nftables/IP_listWlan 2>&1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}') ]] && IP_listWlan_elements="elements = { $(cat /opt/de_GWD/nftables/IP_listWlan) }"
 cat << EOF >/opt/de_GWD/nftables/SET_listWlan.nft
 #!/usr/sbin/nft -f
 table ip de_GWD {
@@ -2531,7 +2531,9 @@ installGWD(){
 
 ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | head -n1)
 netmask=$(ip route | grep "$ethernetnum" | awk 'NR==2{print$1}' | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
-localAddr=$(echo $localAddr | grep -Po '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+[[ -z $netmask ]] && netmask="/24"
+localAddr=$(echo $localAddr | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+[[ -z $localAddr ]] && localAddr="192.168.50.1"
 localAddrCIDR=$(echo "$localAddr$netmask")
 localCIDR="$(echo $localAddr | cut -d . -f1-3).0$netmask"
 
