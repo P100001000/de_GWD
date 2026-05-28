@@ -21,6 +21,16 @@ php_ver="7.4"
 mimalloc_pkg="${mimalloc_pkg}"
 [[ $(grep VERSION_CODENAME /etc/os-release | cut -d= -f2) = "trixie" ]] && php_ver="8.4" && mimalloc_pkg="libmimalloc3"
 
+# 开局自清理：清掉上次失败可能留下的残骸，确保网络干净
+nft flush ruleset 2>/dev/null
+ip rule del fwmark 0x9 table 220 2>/dev/null
+ip route flush table 220 2>/dev/null
+systemctl mask --now systemd-resolved 2>/dev/null
+rm -f /etc/resolv.conf
+cat << 'EOF' >/etc/resolv.conf
+nameserver 119.29.29.29
+nameserver 223.5.5.5
+EOF
 
 installCMD=`cat << EOF
 bash <(wget --no-check-certificate -qO- $OSS_BASE/client)
