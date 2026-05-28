@@ -117,6 +117,10 @@ echo ""
 if [[ $is_armbian -eq 1 ]]; then
     echo -e "${BLUE}>>> Armbian 镜像测速中...${cRES}"
     echo ""
+
+    # 更新 Armbian GPG keyring（防止国内镜像签名验证失败）
+    wget -qO- 'https://apt.armbian.com/armbian.key' 2>/dev/null | gpg --dearmor > /usr/share/keyrings/armbian.gpg 2>/dev/null
+
     declare -A armbian_speeds
     for entry in "${armbian_mirrors[@]}"; do
         mirror="${entry%%|*}"
@@ -182,6 +186,7 @@ backup_dir="/etc/apt/sources.backup.$(date +%Y%m%d%H%M%S)"
 mkdir -p "$backup_dir"
 [[ -f /etc/apt/sources.list ]] && cp /etc/apt/sources.list "$backup_dir/"
 [[ -f /etc/apt/sources.list.d/armbian.list ]] && cp /etc/apt/sources.list.d/armbian.list "$backup_dir/"
+[[ -f /etc/apt/sources.list.d/armbian.sources ]] && cp /etc/apt/sources.list.d/armbian.sources "$backup_dir/"
 echo -e "${GREEN}备份已保存到: ${WHITE}${backup_dir}${cRES}"
 
 # --- 生成新的 sources.list ---
@@ -193,12 +198,17 @@ deb http://${best_debian}/debian ${debian_version}-backports main contrib non-fr
 EOF
 echo -e "${GREEN}已更新 /etc/apt/sources.list${cRES}"
 
-# --- 生成新的 armbian.list ---
+# --- 生成新的 armbian.sources ---
 if [[ -n $best_armbian ]]; then
-    cat << EOF > /etc/apt/sources.list.d/armbian.list
-deb http://${best_armbian} ${debian_version} main ${debian_version}-utils ${debian_version}-desktop
+    rm -f /etc/apt/sources.list.d/armbian.list
+    cat << EOF > /etc/apt/sources.list.d/armbian.sources
+Types: deb
+URIs: http://${best_armbian}
+Suites: ${debian_version}
+Components: main ${debian_version}-utils ${debian_version}-desktop
+Signed-By: /usr/share/keyrings/armbian.gpg
 EOF
-    echo -e "${GREEN}已更新 /etc/apt/sources.list.d/armbian.list${cRES}"
+    echo -e "${GREEN}已更新 /etc/apt/sources.list.d/armbian.sources${cRES}"
 fi
 
 echo ""
