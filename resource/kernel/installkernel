@@ -102,7 +102,7 @@ cleanOldKernels() {
     apt autoremove --purge -y $line
   done
 
-  apt autoremove --purge -y && apt clean -y && apt autoclean -y
+  apt clean -y && apt autoclean -y
 
   update-initramfs -u -k all
   update-grub
@@ -159,6 +159,7 @@ EOF
 echo "deb [signed-by=/etc/apt/keyrings/zabbly.asc] http://pkgs.zabbly.com/kernel/stable $(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1) main" >/etc/apt/sources.list.d/zabbly-kernel.list
 
 apt update && apt install linux-zabbly
+apt-mark manual linux-zabbly 2>/dev/null
 
 if [[ -n $(dpkg --list | grep linux-image | grep zabbly) ]]; then
   cleanOldKernels
