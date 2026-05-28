@@ -82,8 +82,8 @@ unset aptPKG
 }
 
 pkgDEP2(){
-curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg 2>/dev/null
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://mirrors.aliyun.com/docker-ce/linux/debian $(cat /etc/os-release | grep VERSION= | cut -d'(' -f2 | cut -d')' -f1) stable" >/etc/apt/sources.list.d/docker.list
+# Docker: 使用 Debian 主源 docker.io（无需额外 GPG，国内 aliyun 镜像可用）
+rm -f /etc/apt/sources.list.d/docker.list
 
 
 unset aptPKG
@@ -95,7 +95,7 @@ unset aptPKG
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^tmux$') ]] && aptPKG+=(tmux)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^socat$') ]] && aptPKG+=(socat)
 [[ -z $(dpkg -l | awk '{print$2}' | grep '^zip$') ]] && aptPKG+=(zip)
-[[ -z $(dpkg -l | awk '{print$2}' | grep '^docker-ce$') ]] && aptPKG+=(docker-ce)
+[[ -z $(dpkg -l | awk '{print$2}' | grep '^docker.io$') ]] && aptPKG+=(docker.io)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${php_ver}-fpm$") ]] && aptPKG+=(php${php_ver}-fpm)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${php_ver}-cgi$") ]] && aptPKG+=(php${php_ver}-cgi)
 [[ -z $(dpkg -l | awk '{print$2}' | grep "^php${php_ver}-sqlite3$") ]] && aptPKG+=(php${php_ver}-sqlite3)
@@ -890,7 +890,7 @@ EOF
 sync
 sysctl -p >/dev/null 2>&1
 
-if [[ -n $(dpkg -l | awk '{print$2}' | grep '^docker-ce$') ]] && [[ -n $(dpkg -l | awk '{print$2}' | grep '^containerd.io$') ]]; then
+if [[ -n $(dpkg -l | awk '{print$2}' | grep '^docker.io$') ]]; then
 mkdir -p /etc/docker/
 systemctl stop docker docker.socket containerd
 cat << EOF >/etc/docker/daemon.json
