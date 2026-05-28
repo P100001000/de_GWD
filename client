@@ -2530,7 +2530,7 @@ installGWD(){
     read path
 
 ethernetnum=$(find /sys/class/net ! -type d | xargs --max-args=1 realpath | grep 'device' | xargs -n 1 | grep -v 'virtual' | grep -v 'ifb' | awk -F'/' '{print$NF}' | head -n1)
-netmask=$(ip route | grep "$ethernetnum" | awk 'NR==2{print$1}' | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
+netmask=$(ip route | grep "$ethernetnum" | grep 'kernel' | awk '{print$1}' | sed -r 's/([0-9]{1,3}\.){3}[0-9]{1,3}//g')
 [[ -z $netmask ]] && netmask="/24"
 localAddr=$(echo $localAddr | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
 [[ -z $localAddr ]] && localAddr="192.168.50.1"
