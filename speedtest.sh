@@ -125,10 +125,62 @@ echo -e "${GREEN}  最快 Armbian 镜像: ${WHITE}${best_armbian}${cRES}"
 echo -e "${GREEN}========================================${cRES}"
 echo ""
 
-# --- 询问是否应用 ---
-echo -ne "${YELLOW}是否切换到最快镜像？[Y/n] ${cRES}"
-read -r confirm
-[[ $confirm = "n" || $confirm = "N" ]] && echo -e "${YELLOW}已取消${cRES}" && exit 0
+# --- 选择镜像 ---
+echo -e "${GREEN}========================================${cRES}"
+# 找出最快镜像的名称
+for entry in "${armbian_mirrors[@]}"; do
+    [[ "${entry%%|*}" = "$best_armbian" ]] && best_name="${entry##*|}" && break
+done
+echo -e "${GREEN}[1]: 使用推荐（${best_name}）${cRES}"
+echo -e "${GREEN}[2]: 手动选择${cRES}"
+echo -e "${GREEN}[0]: 取消退出${cRES}"
+echo -e "${GREEN}========================================${cRES}"
+echo -ne "${YELLOW}请选择: ${cRES}"
+read -r choice
+
+selected_mirror=""
+case $choice in
+    0)
+        echo -e "${YELLOW}已取消${cRES}" && exit 0
+        ;;
+    1)
+        selected_mirror="$best_armbian"
+        ;;
+    2)
+        echo ""
+        echo -e "${BLUE}>>> 手动选择镜像:${cRES}"
+        echo ""
+        i=1
+        unset mirror_keys
+        mirror_keys=()
+        for entry in "${armbian_mirrors[@]}"; do
+            mirror="${entry%%|*}"
+            name="${entry##*|}"
+            s=${armbian_speeds[$mirror]}
+            if [[ $s -gt 0 ]]; then
+                mirror_keys+=("$mirror")
+                speed_kb=$(awk -v s="$s" 'BEGIN{printf "%.1f", s/1024}')
+                echo -e "  ${GREEN}[$i]${cRES} ${WHITE}${name}${cRES}  ${speed_kb} KB/s"
+                ((i++))
+            fi
+        done
+        echo -ne "${YELLOW}请选择 [1-$((i-1))]: ${cRES}"
+        read -r num
+        if [[ $num -ge 1 && $num -le ${#mirror_keys[@]} ]]; then
+            selected_mirror="${mirror_keys[$((num-1))]}"
+        else
+            echo -e "${RED}无效选择${cRES}" && exit 1
+        fi
+        ;;
+    *)
+        echo -e "${YELLOW}已取消${cRES}" && exit 0
+        ;;
+esac
+
+if [[ -z $selected_mirror ]]; then
+    echo -e "${RED}未选择镜像，退出${cRES}"
+    exit 1
+fi
 
 # --- 备份 ---
 backup_dir="/etc/apt/sources.backup.$(date +%Y%m%d%H%M%S)"
@@ -141,7 +193,7 @@ echo -e "${GREEN}备份已保存到: ${WHITE}${backup_dir}${cRES}"
 rm -f /etc/apt/sources.list.d/armbian.list
 cat << EOF > /etc/apt/sources.list.d/armbian.sources
 Types: deb
-URIs: http://${best_armbian}
+URIs: http://${selected_mirror}
 Suites: ${debian_version}
 Components: main ${debian_version}-utils ${debian_version}-desktop
 Signed-By: /usr/share/keyrings/armbian.gpg
