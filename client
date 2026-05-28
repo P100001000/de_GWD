@@ -1410,6 +1410,18 @@ iface $ethernetnum inet static
     gateway $gatewayAddr
 EOF
 
+# 兼容 systemd-networkd（Armbian trixie 默认使用）
+mkdir -p /etc/systemd/network
+cat << EOF >/etc/systemd/network/10-deGWD.network
+[Match]
+Name=$ethernetnum
+
+[Network]
+Address=$localAddrCIDR
+Gateway=$gatewayAddr
+DNS=127.0.0.1
+EOF
+
 rm -rf /etc/nftables*
 rm -rf /opt/de_GWD/nftables
 mkdir -p /opt/de_GWD/nftables
