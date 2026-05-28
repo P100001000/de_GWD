@@ -1764,7 +1764,7 @@ StandardInput=null
 ProtectSystem=full
 ProtectHome=true
 ExecStart=/bin/bash -c '/etc/rc_online.local' ; /bin/bash -c '/opt/de_GWD/nftables/flowtable_eth.sh' ; /usr/sbin/nft -f /opt/de_GWD/nftables/nftables ; $(which ip) route add local default dev lo scope host table 220 ; $(which ip) rule add fwmark 0x9 table 220 prio 100
-ExecStop=/usr/sbin/nft flush ruleset ; $(which ip) rule del table 220 ; $(which ip) route del local default dev lo table 220
+ExecStop=/usr/sbin/nft flush ruleset
 
 [Install]
 WantedBy=sysinit.target
